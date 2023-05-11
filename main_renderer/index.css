@@ -1,0 +1,29 @@
+.btn {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 5%;
+}
+
+.body { 
+    height: 576px;
+}
+
+.column-1 {
+    float: left;
+    width: 15%;
+    height: 576px;
+    background-color: rgb(177, 177, 177);
+}
+
+.column-2 { 
+    float: left;
+    width: 85%;
+    height: 576px;
+    background-color: rgb(204, 204, 230);
+}
+  
+.row {
+    width: 100%;
+}
