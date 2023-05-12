@@ -1,0 +1,33 @@
+{
+  "valid": "true",
+  "station_specified": "true",
+  "url_station": "https://reqbin.com/echo/get/json",
+  "success": "true",
+  "numApps": "6",
+  "apps": [
+    {
+      "name": "google_0",
+      "url": "https://google.com"
+    },
+    {
+      "name": "github_0",
+      "url": "https://github.com"
+    },
+    {
+      "name": "google_1",
+      "url": "https://google.com"
+    },
+    {
+      "name": "github_1",
+      "url": "https://github.com"
+    },
+    {
+      "name": "mendix_0",
+      "url": "https://mendix.com"
+    },
+    {
+      "name": "mendix_1",
+      "url": "https://mendix.com"
+    }
+  ]
+}

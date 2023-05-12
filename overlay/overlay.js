@@ -1,3 +1,4 @@
+// Data structure to store app data
 class Menu {
     constructor() {
       this.numApps = 0;
@@ -15,51 +16,38 @@ class Menu {
 }
 
 class App {
-    // add other member variables if needed
     constructor(url, name) {
         this.url = url;
         this.name = name;
     }
 }
-function createMenu(menu) {
-    // change this to fetch once web service is available
-    var data = {
-        "numApps": "2",
-        "apps": [
-            {
-                "name": "google",
-                "url": "https://google.com"
-            },
-            {
-                "name": "github",
-                "url": "https://github.com"
-            }
-        ]
-    }
-    var htmlInjection = '<div class="row">'
-    for (i = 0; i < data.numApps; i++) {
-        menu.addApp(new App(data.apps[i].url, data.apps[i].name))
-        htmlInjection += 
+
+function createMenu(data) {
+    // Generate buttons in overlay
+    document.getElementById('listItems').innerHTML += '<div class="row" id="row_0"></div>'
+    for (i = 0; i < data.length; i++) {
+        menu.addApp(new App(data[i].url, data[i].name))
+        document.getElementById("row_" + Math.floor(i / 3).toString()).innerHTML += 
         '<div class="column">' +
-            '<button type="button" id=' + data.apps[i].name + '>' +
-                data.apps[i].name +
+            '<button onclick="buttonFunction(this, menu)" type="button" id=' + data[i].name + '>' +
+                data[i].name +
             '</button>'
         '</div>'    
-        if ((i + 1) % 3 == 0 && i !== 0) {
-            htmlInjection += '</div>'
+        if ((i + 1) % 3 == 0 && i !== 0 && (i + 1) < data.length) {
+            document.getElementById('listItems').innerHTML += 
+            '<div class="row" id="row_' + ((i + 1) / 3).toString() +'"></div>'
         }
-    }
-    document.getElementById('listItems').innerHTML = htmlInjection
-
-    var buttons = document.getElementsByTagName("button");
-    var buttonsCount = buttons.length;
-    for (var i = 0; i < buttonsCount; i += 1) {
-        buttons[i].onclick = function() {
-            window.electronAPI.open_app(this.id, menu.getApp(this.id).url)
-            document.getElementById(this.id).disabled = true
-        };
     }
 }
 
+function buttonFunction(button, menu) {
+    window.electronAPI.open_app(button.id, menu.getApp(button.id).url)
+    document.getElementById(button.id).disabled = true
+}
+
+window.electronAPI.handle_json((event, jsonData) => {
+    console.log(JSON.parse(jsonData))
+    createMenu(JSON.parse(jsonData))
+})
+
 var menu = new Menu();
-createMenu(menu);
