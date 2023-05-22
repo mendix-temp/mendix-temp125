@@ -1,33 +1,77 @@
 {
-  "valid": "true",
-  "station_specified": "true",
-  "url_station": "https://reqbin.com/echo/get/json",
-  "success": "true",
-  "numApps": "6",
+  "url_station": "https://stations100-sandbox.mxapps.io/rest/getstationconfig/v1/GetStationConfig?TenantName=Test&StationName=Station1",
   "apps": [
     {
-      "name": "google_0",
-      "url": "https://google.com"
+      "name": "Google_0",
+      "url": "https://google.com/"
     },
     {
-      "name": "github_0",
-      "url": "https://github.com"
+      "name": "Google_1",
+      "url": "https://google.com/"
     },
     {
-      "name": "google_1",
-      "url": "https://google.com"
+      "name": "Github_0",
+      "url": "https://github.com/"
     },
     {
-      "name": "github_1",
-      "url": "https://github.com"
+      "name": "Github_1",
+      "url": "https://github.com/"
     },
     {
-      "name": "mendix_0",
-      "url": "https://mendix.com"
+      "name": "Mendix_0",
+      "url": "https://mendix.com/"
     },
     {
-      "name": "mendix_1",
-      "url": "https://mendix.com"
+      "name": "Mendix_1",
+      "url": "https://mendix.com/"
+    }
+  ],
+  "devices": [
+    {
+      "name": "Scale_TCP/IP",
+      "websocket_port": "8091",
+      "type": "TCP_IP",
+      "properties": [
+        {
+          "name": "Host",
+          "value": "129.73.5.207"
+        },
+        {
+          "name": "Port",
+          "value": "1701"
+        }
+      ]
+    },
+    {
+      "name": "Scale_Serial",
+      "websocket_port": "8092",
+      "type": "Serial",
+      "properties": [
+        {
+          "name": "Port",
+          "value": "COM3"
+        },
+        {
+          "name": "BitsPerSecond",
+          "value": "9600"
+        },
+        {
+          "name": "DataBits",
+          "value": "8"
+        },
+        {
+          "name": "Parity",
+          "value": "None"
+        },
+        {
+          "name": "StopBits",
+          "value": "1"
+        },
+        {
+          "name": "FlowControl",
+          "value": "None"
+        }
+      ]
     }
   ]
 }

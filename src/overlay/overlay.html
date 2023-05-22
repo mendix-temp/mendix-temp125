@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<style>
+.column {
+  float: left;
+  width: 33.33%;
+}
+
+.row:after {
+  content: "";
+  display: table;
+  clear: both;
+}
+
+.close {
+    float: right;
+    width: 50px;
+    height: 30px;
+}
+
+
+</style>
+<head>
+  <meta charset="UTF-8">
+  <title>Mendix Player</title>
+</head>
+<body style="background-color: red;">
+    <div id="listItems">
+        
+    </div>
+    <script>
+      function buttonFunction(button) {
+        //this.attributes['data-url']
+        window.electronAPI.open_app(button.id, button.dataset.url);
+        document.getElementById(button.id).disabled = true;
+      }
+    </script>
+    <script src="./overlay.js"></script>
+</body>

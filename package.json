@@ -1,24 +1,33 @@
 {
-  "name": "mendix_player",
+  "name": "mendix-player",
+  "productName": "mendix-player",
   "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
+  "description": "My Electron application description",
+  "main": "src/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "echo \"No linting configured\""
   },
-  "repository": "",
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {
-    "electron": "~24.2.0",
-    "gulp": "^3.9.1",
-    "gulp-sass": "^3.1.0"
-  },
+  "keywords": [],
+  "author": "z004spnr",
+  "license": "MIT",
   "dependencies": {
-    "electron": "^1.6.2",
-    "favicon-getter": "^1.1.3",
-    "jsonfile": "^2.4.0",
-    "uuid": "^3.0.1"
+    "@serialport/stream": "^11.0.0",
+    "electron-squirrel-startup": "^1.0.0",
+    "mime": "^3.0.0",
+    "path": "^0.12.7",
+    "serialport": "^11.0.0",
+    "ws": "^8.13.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^6.1.1",
+    "@electron-forge/maker-deb": "^6.1.1",
+    "@electron-forge/maker-rpm": "^6.1.1",
+    "@electron-forge/maker-squirrel": "^6.1.1",
+    "@electron-forge/maker-zip": "^6.1.1",
+    "electron": "24.3.0"
   }
 }
