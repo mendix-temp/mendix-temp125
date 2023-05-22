@@ -11,4 +11,5 @@ window.electronAPI.add_menu_item((event, name) => {
     '</div>';
 });
 
+// Open overlay when "add app" button is pressed
 document.getElementById('button_1').addEventListener('click', openOverlay);

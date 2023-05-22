@@ -13,7 +13,7 @@ if (require('electron-squirrel-startup')) electron.app.quit();
 // Hash table of BrowserView objects (opened apps)
 let views = new Map();
 
-// Builds main window and menu overlay window (without showing the latter)
+// Builds main window, overlay window, and login window
 electron.app.whenReady().then(() => {
   mainWindow = new electron.BrowserWindow({
     webPreferences: {
@@ -38,6 +38,7 @@ electron.app.whenReady().then(() => {
     webPreferences: {
       preload: path.join(__dirname, '/login/preload.js')
     }, 
+    //closable: false,
     parent: mainWindow, 
     modal: true, 
     show: false 
@@ -126,9 +127,14 @@ electron.app.on('window-all-closed', function () {
 /*##################################################################################*/
 function decideJSON() {
   if (fs.existsSync("./config.json")) {
-    config = fs.readFileSync("./config.json")
-    config = JSON.parse(config)
-    handleJSON(config, true);
+    try {
+      config = fs.readFileSync("./config.json")
+      config = JSON.parse(config)
+      handleJSON(config, true);
+    } catch (error) {
+      console.log("Invalid config.json. Getting config.json from API.");
+      login.show();
+    }
   }
   else {
     login.show();
@@ -137,7 +143,7 @@ function decideJSON() {
 
 function handleJSON (config, configExists) {
   // Get JSON from MX Station and updates local file
-  // Calls overlay and sends updated apps list to display
+  // Call overlay and send updated apps list to display
   fetch(config.url_station)
     .then(response => {
       if (!response.ok) {
@@ -161,8 +167,6 @@ function handleJSON (config, configExists) {
     })
     .catch((err) => {
       console.log("Error fetching data from server.");
-      // TODO: delete that
-      console.log(err);
       if (configExists) {
         console.log("Using previous config.");
         overlay.webContents.send('json', JSON.stringify(config["apps"]));
@@ -170,7 +174,7 @@ function handleJSON (config, configExists) {
         login.close();
       }
       else {
-        console.log("No config found in local storage.");
+        console.log("No valid config found in local storage.");
         login.webContents.send('no_config');
       }
     });

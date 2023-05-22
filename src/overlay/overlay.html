@@ -29,7 +29,6 @@
     </div>
     <script>
       function buttonFunction(button) {
-        //this.attributes['data-url']
         window.electronAPI.open_app(button.id, button.dataset.url);
         document.getElementById(button.id).disabled = true;
       }

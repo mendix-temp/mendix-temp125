@@ -1,17 +1,56 @@
 <!DOCTYPE html>
+<style>
+  /* The alert message box */
+.alert {
+  padding: 20px;
+  background-color: rgb(255, 123, 0);
+  color: black;
+  margin-bottom: 15px;
+}
+
+/* The close button */
+.closebtn {
+  margin-left: 15px;
+  color: white;
+  font-weight: bold;
+  float: right;
+  font-size: 22px;
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.center {
+  margin: auto;
+  width: 33.33%;
+}
+
+input {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+</style>
 <head>
   <meta charset="UTF-8">
   <title>Login</title>
 </head>
 <body style="background-color: rgb(161, 161, 253);">
+  <div class="alert" id="alert" style="visibility: hidden;">
+    <span class="alert_text" id="alert_text">Invalid URL.</span>
+    <span class="closebtn" onclick="this.parentElement.style.visibility='hidden';">&times;</span>
+  </div>
+  <div class="center">
     <form id="submitForm" action="javascript:submitForm()">
-        <label for="username">Username:</label><br>
-        <input type="text" id="username" required><br>
-        <label for="password">Password:</label><br>
-        <input type="password" id="password" required><br>
-        <label for="webService">Web Service:</label><br>
-        <input type="text" id="webService" required><br><br>
-        <input type="submit" value="Submit">
-      </form>
+      <label for="username">Username:</label><br>
+      <input type="text" id="username" required><br>
+      <label for="password">Password:</label><br>
+      <input type="password" id="password" required><br>
+      <label for="webService">Web Service:</label><br>
+      <input type="text" id="webService" required><br><br>
+      <input type="submit" value="Submit">
+    </form>
+  </div>
+    
     <script src="./login.js"></script>
 </body>
