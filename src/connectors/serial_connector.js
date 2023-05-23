@@ -1,4 +1,3 @@
-const { Certificate } = require('crypto');
 var SerialPort = require("serialport").SerialPort
 
 var http = require('http'),
@@ -13,6 +12,7 @@ var http = require('http'),
 	webServer, wsServer, wsPort,
 	serialPort, serialBitRate, serialDataBits,
     serialParity, serialStopBits, serialFlowControl,
+	certificate_path, key_path,
 	argv = null;
 
 var usedPort = new Set();
@@ -101,7 +101,7 @@ var new_client = function(webSocketClient, req)  {
 	// Receive data from WebSocket client and send to Serial client
 	webSocketClient.on('message', function(msg) {
 		console.log('WebSocket to Serial message: ' + msg);
-		// TODO: do all connections need CRLF?
+		// TODO: add suffix option
 		serialClient.write(msg + '\r\n', 'ascii');
 	});
 	webSocketClient.on('close', function (code, reason) {
@@ -117,7 +117,7 @@ var new_client = function(webSocketClient, req)  {
 	});
 };
 
-// TODO: add certificate capabilities
+// Create WebSocket server and supports both http and https
 function initWsServer() {
 	wsPort = process.argv[2];
 	serialPort = process.argv[3];
@@ -126,15 +126,27 @@ function initWsServer() {
     serialParity = process.argv[6];
     serialStopBits = process.argv[7];
     serialFlowControl = process.argv[8];
+	certificate_path = process.argv[9];
+	key_path = process.argv[10];
 
-    // TODO modifiy this to handle multiple clients
+	// TODO: Do we need multi user functionality?
     if (usedPort.has(serialPort)) {
         console.log(serialPort + "already in use");
         return;
     }
     usedPort.add(serialPort);
 
-	webServer = http.createServer(http_request);
+	if (certificate_path !== 'null') {
+		// If there is a key, use the key, otherwise, use the certificate
+		// Why? Ask Stephane
+		key = key || certificate;
+		var cert = fs.readFileSync(certificate),
+			key = fs.readFileSync(key);
+		webServer = https.createServer({cert: cert, key: key}, http_request);
+	}
+	else {
+		webServer = http.createServer(http_request);
+	}
 	webServer.listen(wsPort, function() {
 		wsServer = new WebSocketServer({server: webServer});
 		wsServer.on('connection', new_client);

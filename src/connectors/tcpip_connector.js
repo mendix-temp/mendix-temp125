@@ -1,5 +1,3 @@
-const { Certificate } = require('crypto');
-
 var net = require('net'),
 	http = require('http'),
 	https = require('https'),
@@ -10,8 +8,8 @@ var net = require('net'),
 	mime = require('mime'),
 	WebSocketServer = require('ws').Server,
 
-	webServer, wsServer,
-	wsHost, wsPort, tcpHost, tcpPort,
+	webServer, wsServer, certificate_path, key_path,
+	wsPort, tcpHost, tcpPort,
 	argv = null;
 
 var http_error = function (response, code, msg) {
@@ -99,13 +97,25 @@ var new_client = function(webSocketClient, req)  {
 	});
 };
 
-// TODO: add certificate capabilities
+// Create WebSocket server and supports both http and https
 function initWsServer() {
 	wsPort = process.argv[2];
 	tcpHost = process.argv[3];
 	tcpPort = process.argv[4];
+	certificate_path = process.argv[5];
+	key_path = process.argv[6];
 
-	webServer = http.createServer(http_request);
+	if (certificate_path !== 'null') {
+		// If there is a key, use the key, otherwise, use the certificate
+		// Why? Ask Stephane
+		key = key || certificate;
+		var cert = fs.readFileSync(certificate),
+			key = fs.readFileSync(key);
+		webServer = https.createServer({cert: cert, key: key}, http_request);
+	}
+	else {
+		webServer = http.createServer(http_request);
+	}
 	webServer.listen(wsPort, function() {
 		wsServer = new WebSocketServer({server: webServer});
 		wsServer.on('connection', new_client);

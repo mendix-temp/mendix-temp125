@@ -2,10 +2,12 @@ const electron = require('electron');
 const fs = require('fs');
 const path = require('path')
 
-let mainWindow;
-let overlay;
-let currentApp;
-let config;
+let mainWindow,
+  overlay,
+  currentApp,
+  config;
+
+let sideMenuOpen = true;
 
 // Needed for squirrel
 if (require('electron-squirrel-startup')) electron.app.quit();
@@ -21,6 +23,7 @@ electron.app.whenReady().then(() => {
     },
     width: 1024,
     height: 576,
+    show: false
   });
   mainWindow.loadFile('src/main_window/index.html');
 
@@ -52,6 +55,11 @@ electron.app.whenReady().then(() => {
     overlay.hide();
   });
 
+  // Resize html body so that it fits perfectly, regardless of screen resolution
+  mainWindow.on('ready-to-show', (event) => {
+    mainWindow.webContents.send('resize_body', mainWindow.getContentBounds()['height']);
+    mainWindow.show();
+  });
   // Takes care of JSON.config once overlay is loaded
   overlay.on('ready-to-show', (event) => {
     decideJSON();
@@ -68,16 +76,17 @@ electron.app.whenReady().then(() => {
 
 // Return a Rectangle object that is the size of the BrowserView
 function getBoundsView() {
-  var currentBounds = mainWindow.getBounds();
-  currentBounds['x'] = Math.floor(0.15 * currentBounds['width']);
+  var currentBounds = mainWindow.getContentBounds();
+  currentBounds['x'] = sideMenuOpen ? Math.floor(0.15 * currentBounds['width']) : 50;
   currentBounds['width'] = currentBounds['width'] - currentBounds['x'];
   currentBounds['y'] = 0;
   return currentBounds;
 }
 
 // Change the bounds of all opened BrowserViews
-// To be used when window is resized
+// To be used whenever BrowserViews size needs to be updated
 function setBoundsViews() {
+  mainWindow.webContents.send('resize_body', mainWindow.getContentBounds()['height']);
   if (!currentApp) return;
   var currentBounds = getBoundsView();
   // Adds an extra step, but makes the app feel more reactive
@@ -86,6 +95,11 @@ function setBoundsViews() {
     value.setBounds(currentBounds);
   });
 }
+
+electron.ipcMain.on('toggle_side_menu', (event) => {
+  sideMenuOpen = !sideMenuOpen;
+  setBoundsViews();
+});
     
 // Shows overlay (menu) when "Add Apps" button is pressed
 electron.ipcMain.on('overlay_on', (event) => {
@@ -102,7 +116,7 @@ electron.ipcMain.on('open_app_overlay', (event, name, url) => {
   currentApp.webContents.loadURL(url);
   views.set(name, currentApp);
 
-  mainWindow.webContents.send('add_menu_item', name);
+  mainWindow.webContents.send('add_menu_item', name, url);
 });
 
 // Switch to a different app (that has been opened before)
@@ -191,6 +205,9 @@ electron.ipcMain.on("update_station", (event, stationUrl) => {
 function handleDevices(config) {
   for (var i = 0; i < config["devices"].length; i++) {
     let settings = new Map();
+    settings.set("Certificate_Path", 'null');
+    settings.set("Key_Path", 'null');
+
     for (var j = 0; j < config["devices"][i]["properties"].length; j++) {
       settings.set(config["devices"][i]["properties"][j]["name"], config["devices"][i]["properties"][j]["value"]);
     }
@@ -198,12 +215,15 @@ function handleDevices(config) {
     // Create child process depending on device type
     if (config["devices"][i]["type"] == "TCP_IP") {
       child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/tcpip_connector.js'), 
-        [config["devices"][i]["websocket_port"].toString(), settings.get("Host"), settings.get("Port").toString()]);
+        [config["devices"][i]["websocket_port"].toString(), settings.get("Host"),
+         settings.get("Port").toString(), settings.get("Certificate_Path"), settings.get("Key_Path")]);
     }
     else if (config["devices"][i]["type"] == "Serial") {
       child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/serial_connector.js'), 
-        [config["devices"][i]["websocket_port"].toString(), settings.get("Port"), settings.get("BitsPerSecond").toString(), 
-        settings.get("DataBits").toString(), settings.get("Parity"), settings.get("StopBits").toString(), settings.get("FlowControl")]);
+        [config["devices"][i]["websocket_port"].toString(), settings.get("Port"), 
+        settings.get("BitsPerSecond").toString(), settings.get("DataBits").toString(), 
+        settings.get("Parity"), settings.get("StopBits").toString(), settings.get("FlowControl"),
+        settings.get("Certificate_Path"), settings.get("Key_Path")]);
     }
   }
 }

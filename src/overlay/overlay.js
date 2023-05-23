@@ -33,18 +33,12 @@ function createMenu(data) {
     for (i = 0; i < data.length; i++) {
         menu.addApp(new App(data[i].url, data[i].name))
         document.getElementById("row_" + Math.floor(i / 3).toString()).innerHTML += 
-        /*'<div class="column">' +
-            '<button onclick="buttonFunction(this, menu)" type="button" id=' + data[i].name + '>' +
-                data[i].name +
-            '</button>'
-        '</div>'*/
         '<div class="column">' +
-            '<button onclick="buttonFunction(this)" type="button" id=' + data[i].name + ' data-url="' + data[i].url + '">' +
-                data[i].name +
+            '<button class="menuItem" onclick="buttonFunction(this)" type="button" id=' + data[i].name + ' data-url="' + data[i].url + '">' +
+                '<img class="menuIcon" src="' + data[i].url +'/favicon.ico">' +
+                '<div class="menuText">' + data[i].name + '</div>' + 
             '</button>'
-        '</div>'
-        //button = document.getElementById(data[i].name);
-        //button.addEventListener("click", buttonFunction);
+        '</div>';
         if ((i + 1) % 3 == 0 && i !== 0 && (i + 1) < data.length) {
             document.getElementById('listItems').innerHTML += 
             '<div class="row" id="row_' + ((i + 1) / 3).toString() +'"></div>'

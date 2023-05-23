@@ -1,10 +1,15 @@
 module.exports = {
-  packagerConfig: {},
+  packagerConfig: {
+    icon: './icons/mendix-1024',
+  },
   rebuildConfig: {},
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {
+        icon: './icons/mendix-1024.ico',
+        setupIcon: './icons/mendix-1024.ico',
+      },
     },
     {
       name: '@electron-forge/maker-zip',
