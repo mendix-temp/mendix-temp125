@@ -21,7 +21,10 @@
 
 .center {
   margin: auto;
+  margin-top: 35px;
   width: 33.33%;
+  background-color: white;
+  height: 325px;
 }
 
 input {
@@ -30,18 +33,35 @@ input {
   box-sizing: border-box;
 }
 
+.appLogo {
+  max-width: 80%;
+  padding: 20px 20px;
+  padding-bottom: 5px;
+  margin-top: 6px;
+}
+.submitForm {
+  padding: 20px 20px;
+}
+.logoPlaceholder {
+  text-align: center;
+  width: 100%;
+}
+
 </style>
 <head>
   <meta charset="UTF-8">
   <title>Login</title>
 </head>
-<body style="background-color: rgb(161, 161, 253);">
+<body style="background-color: rgb(222, 222, 222);">
   <div class="alert" id="alert" style="visibility: hidden;">
     <span class="alert_text" id="alert_text">Invalid URL.</span>
     <span class="closebtn" onclick="this.parentElement.style.visibility='hidden';">&times;</span>
   </div>
   <div class="center">
-    <form id="submitForm" action="javascript:submitForm()">
+    <div class="logoPlaceholder">
+      <img class="appLogo" src="mendix.png">
+    </div>
+    <form class="submitForm" id="submitForm" action="javascript:submitForm()">
       <label for="username">Username:</label><br>
       <input type="text" id="username" required><br>
       <label for="password">Password:</label><br>
