@@ -1,3 +1,5 @@
+const { start } = require('repl');
+
 var net = require('net'),
 	http = require('http'),
 	https = require('https'),
@@ -9,7 +11,7 @@ var net = require('net'),
 	WebSocketServer = require('ws').Server,
 
 	webServer, wsServer, certificate_path, key_path,
-	wsPort, tcpHost, tcpPort,
+	wsPort, tcpHost, tcpPort, deviceID,
 	argv = null;
 
 var http_error = function (response, code, msg) {
@@ -70,7 +72,7 @@ var new_client = function(webSocketClient, req)  {
 			tcpClient.end();
 		}
 	});
-	tcpClient.on('end', function() {
+	tcpClient.on('close', function() {
 		console.log('TCP client ' + tcpHost + ':' + tcpPort + ' disconnected');
 		webSocketClient.close();
 	});
@@ -88,29 +90,31 @@ var new_client = function(webSocketClient, req)  {
 	});
 	webSocketClient.on('close', function (code, reason) {
 		console.log('WebSocket client disconnected: ' + code + ' [' + reason + ']');
-		tcpClient.end();
+		tcpClient.destroy();
 	});
 	webSocketClient.on('error', function (err) {
 		console.log('WebSocket client error: ' + err);
+		tcpClient.destroy();
 		webSocketClient.close();
-		tcpClient.end();
+	});
+	process.parentPort.postMessage({
+		deviceID: deviceID,
+		connected: true,
 	});
 };
 
 // Create WebSocket server and supports both http and https
-function initWsServer() {
+async function initWsServer() {
 	wsPort = process.argv[2];
 	tcpHost = process.argv[3];
 	tcpPort = process.argv[4];
 	certificate_path = process.argv[5];
 	key_path = process.argv[6];
+	deviceID = process.argv[7];
 
-	if (certificate_path !== 'null') {
-		// If there is a key, use the key, otherwise, use the certificate
-		// Why? Ask Stephane
-		key = key || certificate;
-		var cert = fs.readFileSync(certificate),
-			key = fs.readFileSync(key);
+	if (certificate_path !== 'undefined') {
+		var cert = fs.readFileSync(certificate_path),
+			key = fs.readFileSync(key_path);
 		webServer = https.createServer({cert: cert, key: key}, http_request);
 	}
 	else {
@@ -120,5 +124,12 @@ function initWsServer() {
 		wsServer = new WebSocketServer({server: webServer});
 		wsServer.on('connection', new_client);
 	});
+	webServer.on('error', (e) => {
+		process.parentPort.postMessage('error_connector', {
+			error: wsPort,
+			deviceID: deviceID
+		});
+	});
 }
 initWsServer();
+

@@ -4,25 +4,46 @@ function openOverlay() {
     window.electronAPI.open_overlay();
 }
 
+function closeApp(appName) {
+    window.electronAPI.close_app(appName);
+    document.getElementById(appName + "_open").remove();
+    document.getElementById(appName + "_closed").remove();
+    // TODO: remove button from side menu
+}
+
 // Add buttons in left menu when event is received from main (when app is selected in overlay)
 window.electronAPI.add_menu_item((event, name, url_app) => {
     if (sideMenuOpen) {
         document.getElementById('menuElts').innerHTML += 
-        '<button class="menuItemOpen" onclick="window.electronAPI.switch_app(this.id)" id="' + name + '">' + 
-            '<img class="menuIcon" src="' + url_app +'/favicon.ico">' +
-            '<div class="menuText">' + name + '</div>' + 
-         '</button>' +
-        '<button class="menuItemClosed" onclick="window.electronAPI.switch_app(this.id)" id="' + name + '" hidden="hidden">' + 
+        '<div class="open" id="' + name + "_open" + '">' +
+            '<button class="menuItemOpen" onclick="window.electronAPI.switch_app(this.dataset.name)" data-name="' + name + '">' + 
+                '<img class="menuIcon" src="' + url_app +'/favicon.ico">' +
+                '<div class="menuText">' + name + '</div>' + 
+            '</button>' +
+            '<button class="closeButton" onclick="closeApp(this.dataset.name)" data-name="' + name + '">' +
+                '<span class="material-symbols-outlined">' +
+                    'close' +
+                '</span>' +
+            '</button>' +
+        '</div>' +
+        '<button class="menuItemClosed" onclick="window.electronAPI.switch_app(this.dataset.name)" data-name="' + name + '" style="display:none;" id="' + name + "_closed" + '">' + 
             '<img class="menuIcon" src="' + url_app +'/favicon.ico">' +
         '</button>';
     }
     else {
         document.getElementById('menuElts').innerHTML += 
-        '<button class="menuItemOpen" onclick="window.electronAPI.switch_app(this.id)" id="' + name + '" hidden="hidden">' + 
-            '<img class="menuIcon" src="' + url_app +'/favicon.ico">' +
-            '<div class="menuText">' + name + '</div>' + 
-         '</button>' +
-        '<button class="menuItemClosed" onclick="window.electronAPI.switch_app(this.id)" id="' + name + '">' + 
+        '<div class="open" style="display:none"; id="' + name + "_open" + '">' +
+            '<button class="menuItemOpen" onclick="window.electronAPI.switch_app(this.dataset.name)" data-name="' + name + '">' + 
+                '<img class="menuIcon" src="' + url_app +'/favicon.ico">' +
+                '<div class="menuText">' + name + '</div>' + 
+            '</button>' +
+            '<button class="closeButton" onclick="closeApp(this.dataset.name)" data-name="' + name + '">' +
+                '<span class="material-symbols-outlined">' +
+                    'close' +
+                '</span>' +
+            '</button>' +
+        '</div>' +
+        '<button class="menuItemClosed" onclick="window.electronAPI.switch_app(this.dataset.name)" data-name="' + name + '" id="' + name + "_closed" + '">' + 
             '<img class="menuIcon" src="' + url_app +'/favicon.ico">' +
         '</button>';
     }
@@ -36,7 +57,7 @@ window.electronAPI.resize_body((event, height) => {
 // Open overlay when "add app" button is pressed
 document.getElementById('button_1').addEventListener('click', openOverlay);
 
-// Minimizes side bar
+// Open of close side menu
 document.getElementById('button_2').addEventListener('click', function () {
     sideMenuOpen = !sideMenuOpen;
     if (sideMenuOpen) {
@@ -49,13 +70,13 @@ document.getElementById('button_2').addEventListener('click', function () {
         document.getElementsByClassName('column-2')[0].style.width = '85%';
 
         // Change all side menu buttons
-        var open = document.getElementsByClassName('menuItemOpen');
+        var open = document.getElementsByClassName('open');
         for (i = 0; i < open.length; i++) {
-            open[i].removeAttribute("hidden");
+            open[i].setAttribute('style', 'display:flex;');
         }
         var closed = document.getElementsByClassName('menuItemClosed');
         for (i = 0; i < open.length; i++) {
-            closed[i].setAttribute("hidden", "hidden");
+            closed[i].setAttribute('style', 'display:none;');
         }
     }
     else {
@@ -75,13 +96,13 @@ document.getElementById('button_2').addEventListener('click', function () {
         (document.getElementsByTagName('body')[0].clientWidth - 50).toString() + 'px';
 
         // Change all side menu buttons
-        var open = document.getElementsByClassName('menuItemOpen');
+        var open = document.getElementsByClassName('open');
         for (i = 0; i < open.length; i++) {
-            open[i].setAttribute("hidden", "hidden");
+            open[i].setAttribute('style', 'display:none;');
         }
         var closed = document.getElementsByClassName('menuItemClosed');
         for (i = 0; i < open.length; i++) {
-            closed[i].removeAttribute("hidden");
+            closed[i].setAttribute('style', 'display:flex;');
         }
     }
     window.electronAPI.toggle_side_menu();

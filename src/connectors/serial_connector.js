@@ -12,7 +12,7 @@ var http = require('http'),
 	webServer, wsServer, wsPort,
 	serialPort, serialBitRate, serialDataBits,
     serialParity, serialStopBits, serialFlowControl,
-	certificate_path, key_path,
+	certificate_path, key_path, deviceID,
 	argv = null;
 
 var usedPort = new Set();
@@ -68,7 +68,10 @@ var new_client = function(webSocketClient, req)  {
         parity: serialParity.toLowerCase(),
         stopBits: parseInt(serialStopBits),
         flowControl: (serialFlowControl.toLowerCase() == "none") ? false : true
-    });
+    },
+	function() {
+		console.log("Connected to Serial device on " + serialPort);
+	});
 
     var buffer = "";
 
@@ -90,11 +93,11 @@ var new_client = function(webSocketClient, req)  {
 		}
 	});
 	serialClient.on('close', function() {
-		console.log('Serial client disconnected');
+		console.log('Serial client on ' + serialPort + ' disconnected');
 		webSocketClient.close();
 	});
 	serialClient.on('error', function(err) {
-		console.log('Serial client error: ' + err);
+		console.log('Serial client on ' + serialPort + ' error: ' + err);
 		webSocketClient.close();
 	});
 
@@ -128,6 +131,7 @@ function initWsServer() {
     serialFlowControl = process.argv[8];
 	certificate_path = process.argv[9];
 	key_path = process.argv[10];
+	deviceID = process.argv[11];
 
 	// TODO: Do we need multi user functionality?
     if (usedPort.has(serialPort)) {
@@ -136,12 +140,9 @@ function initWsServer() {
     }
     usedPort.add(serialPort);
 
-	if (certificate_path !== 'null') {
-		// If there is a key, use the key, otherwise, use the certificate
-		// Why? Ask Stephane
-		key = key || certificate;
-		var cert = fs.readFileSync(certificate),
-			key = fs.readFileSync(key);
+	if (certificate_path !== 'undefined') {
+		var cert = fs.readFileSync(certificate_path),
+			key = fs.readFileSync(key_path);
 		webServer = https.createServer({cert: cert, key: key}, http_request);
 	}
 	else {
@@ -150,6 +151,12 @@ function initWsServer() {
 	webServer.listen(wsPort, function() {
 		wsServer = new WebSocketServer({server: webServer});
 		wsServer.on('connection', new_client);
+	});
+	webServer.on('error', (e) => {
+		process.parentPort.postMessage({
+			error: e,
+			deviceID: deviceID
+		});
 	});
 }
 initWsServer();

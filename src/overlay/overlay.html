@@ -28,6 +28,10 @@
   position: relative;
   font-size: 14px;
   top: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 .menuItemOpen {
   width: 100%;
@@ -41,20 +45,101 @@ button {
   height: 50px;
 }
 
+#headerTestDevices {
+  display: flex;
+}
+#backFromTestMenu {
+  height: 50px;
+  width: 50px;
+}
+#testTitle {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-content: center;
+  flex-wrap: wrap;
+}
+
+/* Google icons settings */
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 600,
+  'GRAD' 0,
+  'opsz' 40;
+  color: rgb(110, 110, 110);
+}
 </style>
 <head>
   <meta charset="UTF-8">
-  <title>Mendix Player</title>
+  <title>Menu</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
-<body style="background-color: rgb(222, 222, 222);">
+<div id="menu">
+  <body id="body_1" style="background-color: rgb(222, 222, 222);">
     <div id="listItems">
         
     </div>
+    <button id="Device_List">
+      Device List
+    </button>
     <script>
       function buttonFunction(button) {
         window.electronAPI.open_app(button.id, button.dataset.url);
         document.getElementById(button.id).disabled = true;
       }
     </script>
-    <script src="./overlay.js"></script>
-</body>
+  </body>
+</div>
+<div id="test" style="display: none;">
+  <header>
+    <div id="headerTestDevices">
+      <button id="backFromTestMenu">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
+      <div id="testTitle">WebSockets Test</div>
+    </div>
+  
+  </header>
+  <body>
+    <div id="resultTest">
+      <div id="TCP_IP_TableDiv">
+        <table>
+          <caption>TCP_IP Devices</caption>
+          <thead>
+            <th>Name</th>
+            <th>WebSocket Port</th>
+            <th>Type</th>
+            <th>Host</th>
+            <th>Port</th>
+            <th>Test</th>
+            <th>Response</th>
+          </thead>
+          <tbody id="TCP_IP_Table">
+
+          </tbody>
+        </table>
+      </div>
+      <div id="Serial_TableDiv">
+        <table>
+          <caption>Serial Devices</caption>
+          <thead>
+            <th>Name</th>
+            <th>WebSocket Port</th>
+            <th>Type</th>
+            <th>Port</th>
+            <th>BitsPerSecond</th>
+            <th>DataBits</th>
+            <th>Parity</th>
+            <th>StopBits</th>
+            <th>FlowControl</th>
+          </thead>
+          <tbody id="Serial_Table">
+
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</div>
+<script src="./overlay.js"></script>

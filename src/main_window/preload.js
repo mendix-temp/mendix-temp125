@@ -7,4 +7,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   switch_app: (name) => ipcRenderer.send('switch_app', name),
   resize_body: (height) => ipcRenderer.on('resize_body', height),
   toggle_side_menu: () => ipcRenderer.send('toggle_side_menu'),
+  close_app: (name) => ipcRenderer.send('close_app', name),
 });

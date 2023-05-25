@@ -24,6 +24,10 @@
     {
       "name": "Mendix_1",
       "url": "https://mendix.com/"
+    },
+    {
+      "name": "ultralongnamefortestingpurposesit'ssolongit'simpossibletoread",
+      "url": "https://mendix.com/"
     }
   ],
   "devices": [
@@ -49,7 +53,7 @@
       "properties": [
         {
           "name": "Port",
-          "value": "COM3"
+          "value": "COM4"
         },
         {
           "name": "BitsPerSecond",
@@ -70,6 +74,36 @@
         {
           "name": "FlowControl",
           "value": "None"
+        }
+      ]
+    },
+    {
+      "name": "A_Broken_Test",
+      "websocket_port": "8091",
+      "type": "TCP_IP",
+      "properties": [
+        {
+          "name": "Host",
+          "value": "129.73.5.207"
+        },
+        {
+          "name": "Port",
+          "value": "1701"
+        }
+      ]
+    },
+    {
+      "name": "Another Broken Test",
+      "websocket_port": "8092",
+      "type": "TCP_IP",
+      "properties": [
+        {
+          "name": "Host",
+          "value": "129.73.5.207"
+        },
+        {
+          "name": "Port",
+          "value": "1907"
         }
       ]
     }

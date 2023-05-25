@@ -9,6 +9,8 @@
     width: 15%;
     height: 100%;
     background-color: rgb(222, 222, 222);
+    display: flex;
+    flex-direction: column;
 }
 
 .column-2 { 
@@ -28,31 +30,53 @@ body {
 }
 
 /* side menu elements */
+#menuElts {
+  height: 100%;
+  overflow: auto;
+}
 .menuItemOpen {
   width: 100%;
   height: 100%;
-  max-width: 100%;
+  min-width: 100px;
   position: relative;
+  display: flex;
+  flex-direction: row;
 }
-
 .menuItemClosed {
+  display: flex;
   width: 100%;
-  height: 100%;
+  height: 50px;
   max-width: 100%;
   position: relative;
-  padding: 1px 7px;
 }
 .menuIcon {
-  float: left;
   width: 32px;
   height: 32px;
   max-width: 32px;
   max-height: 32px;
+  position: relative;
+  top: 50%;
+  transform: translate(0, -50%);
+  margin-left: 1px;
 }
 .menuText {
   position: relative;
-  font-size: 14px;
-  top: 7px;
+  top: 50%;
+  width: 100%;
+  transform: translate(0, -50%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 5px;
+  margin-right: 5px;
+}
+.open {
+  height: 50px;
+  display: flex;
+  flex-direction: row;
+}
+.closeButton {
+  min-width: 50px;
+  min-height: 50px;
 }
 
 /* Minimize button */
@@ -61,15 +85,15 @@ body {
 }
 .button_2 {
   width: 100%;
-  height: 50px;
+  min-height: 50px;
   padding: 0px 0px;
 }
 
 /* Add App button */
 .footer {
-  position: absolute;
+  position: relative;
   bottom: 0px;
-  width: inherit;
+  width: 100%;
   height: 50px;
 }
 .button_1 {
@@ -100,7 +124,7 @@ body {
           <button class="button_2" type="button" id="button_2">
             Minimize
           </button>
-          <div id="menuElts" style="height: 50px;">
+          <div id="menuElts">
           </div>
           <div class="footer">
             <button class="button_1" type="button" id="button_1">
