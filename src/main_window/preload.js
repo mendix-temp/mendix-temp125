@@ -2,10 +2,22 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // Expose part of electron API to renderer.js
 contextBridge.exposeInMainWorld('electronAPI', {
-  open_overlay: () => ipcRenderer.send('overlay_on'),
-  add_menu_item: (name, url) => ipcRenderer.on('add_menu_item', name, url),
-  switch_app: (name) => ipcRenderer.send('switch_app', name),
+  open_overlay: (windowID) => ipcRenderer.send('overlay_on', windowID),
+  switch_app: (name, windowID) => ipcRenderer.send('switch_app', name, windowID),
   resize_body: (height) => ipcRenderer.on('resize_body', height),
-  toggle_side_menu: () => ipcRenderer.send('toggle_side_menu'),
-  close_app: (name) => ipcRenderer.send('close_app', name),
+  toggle_side_menu: (windowID) => ipcRenderer.send('toggle_side_menu', windowID),
+  close_app: (appName) => ipcRenderer.on('close_app', appName),
+  toggle_block_menu: (callback) => ipcRenderer.on('toggle_block_menu', callback),
+  json: (json) => ipcRenderer.on('json', json),
+  open_app: (appName, appURL, windowID) => ipcRenderer.send('open_app', appName, appURL, 'mainWindow', windowID),
+  app_opened_overlay: (appName) => ipcRenderer.on('app_opened_overlay', appName),
+  update_status_switched: (appName) => ipcRenderer.on('update_status_switched', appName),
+  refresh_config: (callback) => ipcRenderer.on('refresh_config', callback),
+  new_window: () => ipcRenderer.send('new_window'),
+  reload: (windowID) => ipcRenderer.send('reload', windowID),
+  go_back: (windowID) => ipcRenderer.send('go_back', windowID),
+  go_forward: (windowID) => ipcRenderer.send('go_forward', windowID),
+  set_go_forward: (disabled) => ipcRenderer.on('set_go_forward', disabled),
+  set_go_back: (disabled) => ipcRenderer.on('set_go_back', disabled),
+  toggle_dev_tools: (windowID) => ipcRenderer.send('toggle_dev_tools', windowID),
 });

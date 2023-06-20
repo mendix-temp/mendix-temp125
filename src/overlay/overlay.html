@@ -17,6 +17,13 @@
     height: 30px;
 }
 
+.buttons {
+  display: flex;
+  width: 100%;
+}
+.menuItem {
+  width: 100%;
+}
 .menuIcon {
   float: left;
   width: 32px;
@@ -40,11 +47,17 @@
   position: relative;
 }
 button {
-  margin: 10px;
-  width: 90%;
   height: 50px;
 }
+.closeButton {
+  width: 20%;
+}
 
+.diagnostic {
+  position: fixed;
+  bottom: 10px;
+  display: block;
+}
 #headerTestDevices {
   display: flex;
 }
@@ -78,18 +91,24 @@ button {
 <div id="menu">
   <body id="body_1" style="background-color: rgb(222, 222, 222);">
     <div id="listItems">
-        
+        <div class="column" id="column_0">
+
+        </div>
+        <div class="column" id="column_1">
+
+        </div>
+        <div class="column" id="column_2">
+
+        </div>
     </div>
-    <button id="Device_List">
-      Device List
-    </button>
     <script>
-      function buttonFunction(button) {
-        window.electronAPI.open_app(button.id, button.dataset.url);
-        document.getElementById(button.id).disabled = true;
-      }
+      
     </script>
   </body>
+  <div class="diagnostic">
+    <button id="Device_List">Device List</button>
+    <button id="Refresh_Config">Refresh Config</button>
+  </div>
 </div>
 <div id="test" style="display: none;">
   <header>
@@ -102,42 +121,25 @@ button {
   
   </header>
   <body>
-    <div id="resultTest">
-      <div id="TCP_IP_TableDiv">
-        <table>
-          <caption>TCP_IP Devices</caption>
-          <thead>
-            <th>Name</th>
-            <th>WebSocket Port</th>
-            <th>Type</th>
-            <th>Host</th>
-            <th>Port</th>
-            <th>Test</th>
-            <th>Response</th>
-          </thead>
-          <tbody id="TCP_IP_Table">
+      <table id="devicesProperties">
+        <caption>Devices</caption>
+        <thead>
+          <th>Name</th>
+          <th>WebSocket Port</th>
+          <th>Class</th>
+          <th>Driver</th>
+          <th>Properties</th>
+          <th>Status</th>
+          <th>Connect</th>
+          <th>Disconnect</th>
+          <th>Test</th>
+          <th>Send</th>
+          <th>Response</th>
+        </thead>
+        <tbody id="devicesContent">
 
-          </tbody>
-        </table>
-      </div>
-      <div id="Serial_TableDiv">
-        <table>
-          <caption>Serial Devices</caption>
-          <thead>
-            <th>Name</th>
-            <th>WebSocket Port</th>
-            <th>Type</th>
-            <th>Port</th>
-            <th>BitsPerSecond</th>
-            <th>DataBits</th>
-            <th>Parity</th>
-            <th>StopBits</th>
-            <th>FlowControl</th>
-          </thead>
-          <tbody id="Serial_Table">
-
-          </tbody>
-        </table>
+        </tbody>
+      </table>
       </div>
     </div>
   </body>

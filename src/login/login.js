@@ -2,7 +2,15 @@
 // Send an event to add station URL to config.json if it is valid
 // If not, displays the warning banner
 function submitForm() {
-    url = document.getElementById("webService").value;
+    var domain = document.getElementById("webService").value;
+    if (!(domain.indexOf('https://') == 0 || domain.indexOf('http://') == 0)) {
+      domain = 'http://' + domain;
+    }
+    if (domain.slice(-1) == '/') {
+      domain = domain.substring(0, domain.length - 1);
+    }
+
+    var url = domain + '/rest/getstationconfig/v1/GetStationConfig?HostName='
     if (!isValidUrl(url)) {
         var banner = document.getElementById('alert');
         banner.innerHTML = 

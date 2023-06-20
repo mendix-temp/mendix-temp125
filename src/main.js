@@ -1,22 +1,44 @@
-const { error } = require('console');
 const electron = require('electron');
 const fs = require('fs');
-const path = require('path')
+const path = require('path');
 const WebSocket = require('ws').WebSocket;
+const os = require('os');
 
 let mainWindow,
   overlay,
-  currentApp,
   config;
 
-let sideMenuOpen = true;
+// pointer to process handling websocket connection to station
+let deviceListProcess = null;
 
 // Needed for squirrel
 if (require('electron-squirrel-startup')) electron.app.quit();
 
-// Hash table of BrowserView objects (opened apps)
-let views = new Map();
+/*##################################################################################/*
+----------------------------------DATA STRUCTURES-----------------------------------
+/*##################################################################################*/
 
+// Class storing a browser window and its associated browser views and overlay
+class WindowClass {
+  constructor(someWindow, someOverlay) {
+    this.window = someWindow;
+    this.overlay = someOverlay;
+    this.views = new Map();
+    this.sideMenuOpen = true;
+    this.menuOpenable = true;
+
+    // name of current view
+    this.currentView = null;
+  }
+}
+
+// Hash table of WindowClass objects
+// (window.id) -> (WindowClass)
+let IDToWindowClass = new Map();
+
+// Hash table of WebSocket objects, used for testing window
+// (WebSocket port) -> (WebSocket Object)
+let WSPortToWS = new Map();
 /*##################################################################################/*
 ----------------------------------WINDOWS CREATION----------------------------------
 /*##################################################################################*/
@@ -37,7 +59,7 @@ electron.app.whenReady().then(() => {
       preload: path.join(__dirname, '/overlay/overlay_preload.js')
     }, 
     parent: mainWindow, 
-    modal: true, 
+    modal: false, 
     show: false 
   });
   overlay.loadFile('src/overlay/overlay.html');
@@ -52,7 +74,16 @@ electron.app.whenReady().then(() => {
     show: false 
   });
   login.loadFile('src/login/login.html');
-  createListeners();
+
+  // Create link between overlay and main window
+  mainWindow.webContents.executeJavaScript('windowID = ' + mainWindow.id + ';');
+  overlay.webContents.executeJavaScript('windowID = ' + mainWindow.id + ';');
+  
+  IDToWindowClass.set(mainWindow.id, new WindowClass(mainWindow, overlay));
+  createListeners(mainWindow, overlay, true);
+
+  // Hide default window menu
+  electron.Menu.setApplicationMenu(null);
 });
 
 
@@ -60,72 +91,153 @@ electron.app.whenReady().then(() => {
 ---------------------------------FUNCTION DEFINITION--------------------------------
 /*##################################################################################*/
 // Return a Rectangle object that is the size of the BrowserView
-function getBoundsView() {
-  var currentBounds = mainWindow.getContentBounds();
-  currentBounds['x'] = sideMenuOpen ? Math.ceil(0.15 * currentBounds['width']) : 50;
+function getBoundsView(window) {
+  var currentBounds = window.getContentBounds();
+  currentBounds['x'] = IDToWindowClass.get(window.id).sideMenuOpen ? Math.ceil(0.15 * currentBounds['width']) : 50;
   currentBounds['width'] = currentBounds['width'] - currentBounds['x'];
-  currentBounds['y'] = 0;
+  currentBounds['height'] = currentBounds['height'] - 25;
+  currentBounds['y'] = 25;
   return currentBounds;
 }
 
 // Change the bounds of all opened BrowserViews
 // To be used whenever BrowserViews size needs to be updated
-function setBoundsViews() {
-  mainWindow.webContents.send('resize_body', mainWindow.getContentBounds()['height']);
-  if (!currentApp) return;
-  var currentBounds = getBoundsView();
+function setBoundsViews(window) {
+  window.webContents.send('resize_body', window.getContentBounds()['height']);
+  var currentBounds = getBoundsView(window);
+
+  if (currentBounds['width'] + currentBounds['x'] < 664 && IDToWindowClass.get(window.id).menuOpenable) {
+    IDToWindowClass.get(window.id).menuOpenable = !IDToWindowClass.get(window.id).menuOpenable;
+    window.webContents.send('toggle_block_menu');
+  }
+  else if (currentBounds['width'] + currentBounds['x'] > 664 && !IDToWindowClass.get(window.id).menuOpenable) {
+    IDToWindowClass.get(window.id).menuOpenable = !IDToWindowClass.get(window.id).menuOpenable;
+    window.webContents.send('toggle_block_menu');
+  }
+  if (IDToWindowClass.get(window.id).views.size == 0) return;
+
   // Adds an extra step, but makes the app feel more reactive
-  currentApp.setBounds(currentBounds);
-  views.forEach(function(value, key) {
+  IDToWindowClass.get(window.id).views.get(IDToWindowClass.get(window.id).currentView).setBounds(currentBounds);
+  IDToWindowClass.get(window.id).views.forEach(function(value, key) {
     value.setBounds(currentBounds);
   });
 }
 
+// Make the necessary changes when a device cannot connect
+// or is disconnected because of an error
+function deviceDisconnected(deviceID) {
+  let WSPort = config["devices"][deviceID]["websocket_port"];
+  config["devices"][deviceID]["connected"] = "false";
+  // Close WebSocket if it is currently open
+  if (WSPortToWS.has(parseInt(WSPort))) {
+    WSPortToWS.get(parseInt(WSPort)).close();
+    WSPortToWS.delete(parseInt(WSPort));
+
+    IDToWindowClass.forEach((windowObj, windowID) => {
+      windowObj.overlay.webContents.send('response_test_WS', "WebSocket Closed Successfully", WSPort);
+    });
+  }
+
+  // Update all the overlays
+  IDToWindowClass.forEach((windowObj, windowID) => {
+    windowObj.overlay.webContents.send('device_disconnected', WSPort);
+  });
+}
 
 /*##################################################################################/*
 ----------------------------------------IPC-----------------------------------------
 /*##################################################################################*/
-electron.ipcMain.on('toggle_side_menu', (event) => {
-  sideMenuOpen = !sideMenuOpen;
-  setBoundsViews();
+electron.ipcMain.on('toggle_side_menu', (event, windowID) => {
+  IDToWindowClass.get(windowID).sideMenuOpen = !IDToWindowClass.get(windowID).sideMenuOpen;
+  setBoundsViews(IDToWindowClass.get(windowID).window);
 });
     
 // Shows overlay (menu) when "Add Apps" button is pressed
-electron.ipcMain.on('overlay_on', (event) => {
-  overlay.show()
+electron.ipcMain.on('overlay_on', (event, windowID) => {
+  IDToWindowClass.get(windowID).overlay.show();
 });
 
-// Start the process for an app that has never been opened before
-electron.ipcMain.on('open_app_overlay', (event, name, url) => {
-  overlay.hide()
-  currentApp = new electron.BrowserView()
-  mainWindow.setBrowserView(currentApp)
-  var currentBounds = getBoundsView();
-  currentApp.setBounds(currentBounds);
-  currentApp.webContents.loadURL(url);
-  views.set(name, currentApp);
 
-  mainWindow.webContents.send('add_menu_item', name, url);
+// Start the process for an app that has never been opened before
+electron.ipcMain.on('open_app', (event, name, url, source, windowID) => {
+  let currentWindowClass = IDToWindowClass.get(windowID);
+  if (currentWindowClass.views.has(name)) {
+    return;
+  }
+  var currentApp = new electron.BrowserView();
+  currentWindowClass.views.set(name, currentApp);
+  currentWindowClass.currentView = name;
+  currentWindowClass.window.setBrowserView(currentApp);
+  var currentBounds = getBoundsView(currentWindowClass.window);
+  currentApp.setBounds(currentBounds);
+  currentApp.webContents.loadURL(url)
+    .catch((error) => {
+      currentApp.webContents.loadFile('src/error/error_load_url.html')
+      .then(() => {
+        currentApp.webContents.executeJavaScript('document.getElementById("error_message").innerHTML = "' + error.toString() +'";');
+      });
+    })
+    .finally(() => {
+      if (source === 'overlay') {
+        currentWindowClass.overlay.webContents.send('app_opened_overlay', name);
+        currentWindowClass.window.webContents.send('app_opened_overlay', name);
+      }
+      else if (source === "mainWindow") {
+        currentWindowClass.window.webContents.send('update_status_switched', name);
+      }
+      // Update goBack/goForward buttons when page loads/fails to load
+      currentApp.webContents.on('did-fail-load', (event) => {
+        IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+        IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+      });
+      currentApp.webContents.on('did-frame-finish-load', (event) => {
+        IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+        IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+      });
+      // In case webApp can go forward/back when it loads
+      IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+      IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+    });
+    // Update buttons in overlay if app is opened from mainWindow
+    if (source === 'mainWindow') {
+      currentWindowClass.overlay.webContents.send('app_opened_main', name);
+    }
+    
 });
 
 // Switch to a different app (that has been opened before)
-electron.ipcMain.on('switch_app', (event, name) => {
-  currentApp = views.get(name);
-  mainWindow.setBrowserView(currentApp);
+electron.ipcMain.on('switch_app', (event, name, windowID) => {
+  let tempWindowClass = IDToWindowClass.get(windowID);
+  if (tempWindowClass.views.size <= 1 || name === tempWindowClass.currentView) return;
+  if (tempWindowClass.views.has(name)) {
+    tempWindowClass.window.setBrowserView(tempWindowClass.views.get(name));
+    tempWindowClass.window.webContents.send('update_status_switched', name);
+    tempWindowClass.currentView = name;
+    // Update forward/Back buttons when current view is changed
+    IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+    IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+  }
 });
 
 // Close open app and send signal to overlay to reset app button
-electron.ipcMain.on('close_app', (event, name) => {
-  var toClose = views.get(name);
-  if (currentApp === toClose) {
-    mainWindow.setBrowserView(null);
+electron.ipcMain.on('close_app', (event, name, windowID) => {
+  let currentWindowClass = IDToWindowClass.get(windowID);
+  if (!currentWindowClass.views.has(name)) {
+    return;
+  }
+  var toClose = currentWindowClass.views.get(name);
+
+  if (currentWindowClass.currentView === name && toClose.webContents) {
+    currentWindowClass.window.setBrowserView(null);
+    currentWindowClass.currentView = null;
     toClose.webContents.destroy();
   }
-  else {
+  else if (toClose.webContents) {
     toClose.webContents.destroy();
   }
-  views.delete(name);
-  overlay.webContents.send('close_app', name);
+  currentWindowClass.views.delete(name);
+  currentWindowClass.overlay.webContents.send('close_app', name);
+  currentWindowClass.window.webContents.send('close_app', name);
 });
 
 // Quit app when a renderer process emits 'quit_app'
@@ -135,71 +247,224 @@ electron.ipcMain.on('quit_app', (event) => {
 });
 
 // Send list of connected devices to build menu in overlay
-electron.ipcMain.on('get_device_list', (event) => {
+electron.ipcMain.on('get_device_list', (event, windowID) => {
   var deviceList = new Array();
   WSPortToDevice.forEach(function(device, port) {
     deviceList.push(device);
-  })
-  overlay.webContents.send('device_list', deviceList);
+  });
+  IDToWindowClass.get(windowID).overlay.webContents.send('device_list', deviceList);
 }); 
 
-// Test WebSocket by creating websocket, sending message from user, 
-// waiting for response, and sending resonse back to user
-electron.ipcMain.on('test_WS', (event, WSPort, message) => {
-  var ws = new WebSocket('ws://localhost:' + WSPort, {handshakeTimeout: 5000});
-  ws.on('open', function () {
-    ws.send(message);
+// Open WebSocket for devices test (from overlay)
+electron.ipcMain.on('open_WS', (event, WSPort) => {
+  IDToWindowClass.forEach((windowObj, windowID) => {
+    windowObj.overlay.webContents.send('update_WS_buttons', WSPort, true);
   });
+  var ws = new WebSocket('ws://localhost:' + WSPort);
+  WSPortToWS.set(WSPort, ws);
+  IDToWindowClass.forEach((windowObj, windowID) => {
+    windowObj.overlay.webContents.send('response_test_WS', "Opening WebSocket", WSPort);
+  });
+
   ws.on('message', function(data) {
-    overlay.webContents.send('response_test_WS', data.toString(), WSPort);
-    ws.close();
+    IDToWindowClass.forEach((windowObj, windowID) => {
+      windowObj.overlay.webContents.send('response_test_WS', data.toString(), WSPort);
+    });
+  });
+  ws.on('open', function () {
+    IDToWindowClass.forEach((windowObj, windowID) => {
+      windowObj.overlay.webContents.send('response_test_WS', "WebSocket Opened Successfully", WSPort);
+    });
   });
   ws.on('error', function(err) {
-    overlay.webContents.send('response_test_WS', err.toString(), WSPort);
-    ws.close();
+    IDToWindowClass.forEach((windowObj, windowID) => {
+      windowObj.overlay.webContents.send('response_test_WS', err.toString(), WSPort);
+    });
+  });
+  ws.on('close', function() {
+    IDToWindowClass.forEach((windowObj, windowID) => {
+      windowObj.overlay.webContents.send('response_test_WS', "WebSocket Closed Successfully", WSPort);
+      windowObj.overlay.webContents.send('update_WS_buttons', WSPort, false);
+    });
   });
 });
+
+// Test WebSocket for devices test (from overlay)
+electron.ipcMain.on('test_WS', (event, WSPort, message) => {
+  WSPortToWS.get(WSPort).send(message);
+});
+
+// Close WebSocket for devices test (from overlay)
+electron.ipcMain.on('close_WS', (event, WSPort) => {
+  WSPortToWS.get(WSPort).close();
+  WSPortToWS.delete(WSPort);
+});
+
+// Close everything and get new config from API/file
+// (config.json modified manually will get overwritten by API config)
+electron.ipcMain.on('refresh_config', (event) => {
+  
+  IDToWindowClass.forEach((windowClass, windowID) => {
+    // Set all browser views of all windows to null
+    windowClass.window.setBrowserView(null);
+    windowClass.window.currentView = null;
+
+    // Close all open apps
+    for (const appName of windowClass.views.keys()) {
+      windowClass.views.get(appName).webContents.destroy();
+      windowClass.window.webContents.send('close_app', appName);
+    }
+    windowClass.views.clear();
+    windowClass.window.webContents.send('refresh_config');
+    windowClass.overlay.webContents.send('clear_overlay');
+  }); 
+
+  // kill all connector processes
+  for (const processID of PIDToProcess.keys()) {
+    PIDToProcess.get(processID).kill()
+  }
+
+  // close all open webSockets
+  WSPortToWS.forEach((WS, WSPort) => {
+    WS.close();
+  }); 
+  WSPortToDevice.clear();
+  WSPortToWS.clear();
+  PIDToProcess.clear();
+
+  login = new electron.BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, '/login/preload.js')
+    }, 
+    //closable: false,
+    parent: mainWindow, 
+    modal: true,
+    show: false 
+  });
+  login.loadFile('src/login/login.html');
+  decideJSON();
+});
+
+// Create new browser window when button is pressed
+electron.ipcMain.on('new_window', (event) => {
+  let newWindow = new electron.BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, '/main_window/preload.js')
+    },
+    width: 1024,
+    height: 576,
+    show: true
+  });
+  newWindow.loadFile('src/main_window/index.html');
+
+  let newOverlay = new electron.BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, '/overlay/overlay_preload.js')
+    }, 
+    parent: newWindow, 
+    modal: false, 
+    show: false 
+  });
+  newOverlay.loadFile('src/overlay/overlay.html');
+
+  // Create link between overlay and main window
+  newWindow.webContents.executeJavaScript('windowID = ' + newWindow.id + ';');
+  newOverlay.webContents.executeJavaScript('windowID = ' + newWindow.id + ';');
+  
+  IDToWindowClass.set(newWindow.id, new WindowClass(newWindow, newOverlay));
+  createListeners(newWindow, newOverlay, false);
+});
+/*--------------------------------WEB FUNCTIONALITY---------------------------------*/
+// Reload current view
+electron.ipcMain.on('reload', (event, windowID) => {
+  try {
+    IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.reload();
+    IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+    IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+  } catch (error) {
+    return;
+  }
+});
+// Go back in current view
+electron.ipcMain.on('go_back', (event, windowID) => {
+  try {
+    IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.goBack();
+    IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+    IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());  
+  } catch (error) {
+    return;
+  }
+});
+// Go forward in current view
+electron.ipcMain.on('go_forward', (event, windowID) => {
+  try {
+    IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.goForward();
+    IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+    IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+  } catch (error) {
+    return;
+  }
+});
+
+electron.ipcMain.on('toggle_dev_tools', (event, windowID) => {
+  IDToWindowClass.get(windowID).window.webContents.openDevTools({mode: 'detach'})
+});
+
 
 /*##################################################################################/*
 ---------------------------------------EVENTS---------------------------------------
 /*##################################################################################*/
-function createListeners() {
+function createListeners(someWindow, someOverlay, isFirstWindow) {
   // Quit app when all windows are closed
   electron.app.on('window-all-closed', function () {
     electron.app.quit();
   });
 
-
   // Resize html body so that it fits perfectly, regardless of screen resolution
-  mainWindow.on('ready-to-show', (event) => {
-    mainWindow.webContents.send('resize_body', mainWindow.getContentBounds()['height']);
-    mainWindow.show();
+  someWindow.on('ready-to-show', (event) => {
+    someWindow.webContents.send('resize_body', someWindow.getContentBounds()['height']);
+    someWindow.show();
   });
 
   // Update bounds of all BrowserViews when window is resized
-  mainWindow.on('resized', (event) => {
-    setBoundsViews();
+  someWindow.on('resize', (event) => {
+    setBoundsViews(someWindow);
   });
-  mainWindow.on('maximize', (event) => {
-    setBoundsViews();
+  someWindow.on('maximize', (event) => {
+    setBoundsViews(someWindow);
   });
-
 
   // Overload close button on overlay window so that it hides it 
   // instead of closing it (useful for storing settings while app is open)
-  overlay.on('close', function(e){
+  someOverlay.on('close', function(e){
     e.preventDefault();
-    overlay.hide();
+    someOverlay.hide();
   });
 
   // Takes care of JSON.config once overlay is loaded
-  overlay.on('ready-to-show', (event) => {
-    decideJSON();
+  // Only connect to devices if connection does not exist
+  someOverlay.on('ready-to-show', (event) => {
+    if (isFirstWindow) {
+      decideJSON();
+    }
+    else {
+      // Initialize overlay and main window when not first window
+      // Create left menu and overlay menu
+      someOverlay.webContents.send('json', JSON.stringify(config["apps"]));
+      someWindow.webContents.send('json', JSON.stringify(config["apps"]));
+      
+      // Create devices test menu
+      var deviceList = new Array();
+      WSPortToDevice.forEach(function(device, port) {
+        deviceList.push(device);
+      });
+      someOverlay.webContents.send('device_list', deviceList);
+    }
   });
 
 
   login.on('close', (event) => {
-    mainWindow.close();
+    electron.app.quit();
   });
 }
 
@@ -225,7 +490,9 @@ function decideJSON() {
 function handleJSON (config, configExists) {
   // Get JSON from MX Station and updates local file
   // Call overlay and send updated apps list to display
-  fetch(config.url_station)
+  fetch(config.url_station, {headers: {
+    hostName: os.hostname()
+  }})
     .then(response => {
       if (!response.ok) {
         console.log("Denied access by server");
@@ -242,15 +509,23 @@ function handleJSON (config, configExists) {
           // TODO: add script to handle write error
         }
       });
-      overlay.webContents.send('json', JSON.stringify(config["apps"]));
+      IDToWindowClass.forEach((windowObj, windowID) => {
+        windowObj.overlay.send('json', JSON.stringify(config["apps"]));
+        windowObj.window.send('json', JSON.stringify(config["apps"]));
+      });
+      
       handleDevices(config);
       login.destroy();
     })
     .catch((err) => {
       console.log("Error fetching data from server.");
       if (configExists) {
-        console.log("Using previous config.");
-        overlay.webContents.send('json', JSON.stringify(config["apps"]));
+        console.log("Using previous config from file.");
+        IDToWindowClass.forEach((windowObj, windowID) => {
+          windowObj.overlay.send('json', JSON.stringify(config["apps"]));
+          windowObj.window.send('json', JSON.stringify(config["apps"]));
+        });
+        
         handleDevices(config);
         login.destroy();
       }
@@ -262,15 +537,15 @@ function handleJSON (config, configExists) {
 }
 
 electron.ipcMain.on("update_station", (event, stationUrl) => {
-  config = {"url_station": stationUrl};
+  config = {"url_station": stationUrl + os.hostname()};
   handleJSON(config, false);
-})
+});
 
 /*###################################################################################/*
 ----------------------------------CREATE WEBSOCKETS----------------------------------
 /*###################################################################################*/
-// Hold childProcesses so they don't get garbage collected
-let childProcesses = new Array();
+// Mapping from processID to process
+let PIDToProcess = new Map();
 // Mapping from WS Port to device available on that port
 let WSPortToDevice = new Map();
 function handleDevices(config) {
@@ -278,68 +553,52 @@ function handleDevices(config) {
   for (var i = 0; i < config["devices"].length; i++) {
     // Make sure that no two devices use the same port in config.json
     if (WSPortToDevice.has(config["devices"][i]["websocket_port"])) {
-      portInUse(config["devices"][i]);
+      config["devices"][i]["connected"] = "false";
+      portInUse(config["devices"][i], i);
+      WSPortToDevice.set((-i).toString(), config["devices"][i]);
+      WSPortToDevice.get((-i).toString())["connected"] =  "false";
       continue;
     }
-    else {
-      WSPortToDevice.set(config["devices"][i]["websocket_port"], config["devices"][i]);
-    }
+    WSPortToDevice.set(config["devices"][i]["websocket_port"], config["devices"][i]);
 
-    let settings = new Map();
-    settings.set("Certificate_Path", 'undefined');
-    settings.set("Key_Path", 'undefined');
-
-    for (var j = 0; j < config["devices"][i]["properties"].length; j++) {
-      settings.set(config["devices"][i]["properties"][j]["name"], config["devices"][i]["properties"][j]["value"]);
-    }
-
+    config["devices"][i]["deviceID"] = i.toString();
     // Create child process depending on device type
-    if (config["devices"][i]["type"] == "TCP_IP") {
-      child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/tcpip_connector.js'), 
-      [config["devices"][i]["websocket_port"].toString(), settings.get("Host"),
-        settings.get("Port").toString(), settings.get("Certificate_Path"), settings.get("Key_Path"),
-      i.toString()]);
-    }
-    else if (config["devices"][i]["type"] == "Serial") {
-      child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/serial_connector.js'), 
-      [config["devices"][i]["websocket_port"].toString(), settings.get("Port"), 
-      settings.get("BitsPerSecond").toString(), settings.get("DataBits").toString(), 
-      settings.get("Parity"), settings.get("StopBits").toString(), settings.get("FlowControl"),
-      settings.get("Certificate_Path"), settings.get("Key_Path"), i.toString()]);
-    }
-    childProcesses.push(child);
+    child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/' + config["devices"][i]["driver_name"] + '_connector.js'), 
+    [JSON.stringify(config["devices"][i])]);
+
+    WSPortToDevice.get(config["devices"][i]["websocket_port"])["connected"] =  "true";
+    PIDToProcess.set(i, child);
     errorHandling(child);    
   }
+  var deviceList = new Array();
+  WSPortToDevice.forEach(function(device, port) {
+    deviceList.push(device);
+  });
+  IDToWindowClass.forEach((windowObj, windowID) => {
+    windowObj.overlay.send('devices_handled');
+    windowObj.overlay.webContents.send('device_list', deviceList);
+  });
+  if (!deviceListProcess) {
+    startWebAppCommProcess();
+  }
+  updateDeviceList(config['devices']);
 }
 
-function retryConnection(device) {
-  var child;
-  let settings = new Map();
-  settings.set("Certificate_Path", 'undefined');
-  settings.set("Key_Path", 'undefined');
+// TODO: could combine retryConnection and handleDevices into 1 function
+// and remove if else if by changing file name in connectors to device type
+function retryConnection(device, deviceID) {
+  let child;
 
-  for (var i = 0; i < device["properties"].length; i++) {
-    settings.set(device["properties"][i]["name"], device["properties"][i]["value"]);
-  }
+  device["deviceID"] = deviceID.toString();
+  // Create child process depending on device type
+  child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/' + device["driver_name"] + '_connector.js'), 
+  [JSON.stringify(device)]);
 
-  if (device["type"] == "TCP_IP") {
-    child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/tcpip_connector.js'), 
-      [device["websocket_port"].toString(), settings.get("Host"),
-        settings.get("Port").toString(), settings.get("Certificate_Path"), settings.get("Key_Path"),
-      childProcesses.length.toString()]);
-  }
-  else if (device["type"] == "Serial") {
-    child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/serial_connector.js'), 
-      [device["websocket_port"].toString(), settings.get("Port"), 
-      settings.get("BitsPerSecond").toString(), settings.get("DataBits").toString(), 
-      settings.get("Parity"), settings.get("StopBits").toString(), settings.get("FlowControl"),
-      settings.get("Certificate_Path"), settings.get("Key_Path"), childProcesses.length.toString()]);
-  }
-  childProcesses.push(child);
-  errorHandling(child);
+  PIDToProcess.set(deviceID, child);
+  errorHandling(child);    
 }
 
-function portInUse(device) {
+function portInUse(device, deviceID) {
   electron.dialog.showMessageBoxSync(mainWindow, {
     message: 'An error occured during connection to device ' +
              device["name"] + ':\n' +
@@ -351,9 +610,9 @@ function portInUse(device) {
 }
 
 function errorHandling(child) {
-  child.once('error_connector', (data) => {
-    childProcesses[data.deviceID].kill();
-    childProcesses[data.deviceID] = null;
+  child.once('message', (data) => {
+    PIDToProcess.get(parseInt(data.deviceID)).kill();
+    PIDToProcess.delete(parseInt(data.deviceID));
     response = electron.dialog.showMessageBoxSync(mainWindow, {
       message: 'An error occured during connection to device ' +
                config["devices"][data.deviceID]["name"] + ':\n' + data.error,
@@ -361,58 +620,54 @@ function errorHandling(child) {
       buttons: ['Retry Connection', 'Ignore'],
       title: config["devices"][data.deviceID]["name"],
     });
+    // case 0 = Retry Connection button pressed
+    // case 1 and default are ignore and close message window
+    // In that case, remove device from device list and send error message
+    // and updated device list to MXConn
     switch (response) {
       case 0:
-        retryConnection(config["devices"][data.deviceID]);
+        retryConnection(config["devices"][data.deviceID], parseInt(data.deviceID));
         break;
       case 1:
+        WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["connected"] = "false";
+        sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
+        deviceDisconnected(data.deviceID);
         break;
       default:
+        WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["connected"] = "false";
+        sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
+        deviceDisconnected(data.deviceID);
         break;
     }
   });
 }
 
 /*###################################################################################/*
------------------------------------TEST WEBSOCKETS-----------------------------------
+---------------------------------WEBAPP COMMUNICATION--------------------------------
 /*###################################################################################*/
-/*async function testWebSockets() {
-  var report = new Array();
-  var mapping = new Map();
-
-  // Create websocket with all available ports
-  WSPortToDevice.forEach(async function(device, port) {
-    var ws = new WebSocket('ws://localhost:' + port);
-    mapping.set(port, ws);
-  });
-
-  // Try connection with WebSocket
-  var tested = new Set();
-  var countWSTested = 0;
-  var currentTime = Date.now();
-  while (countWSTested < WSPortToDevice.size && Date.now() - currentTime < 10000) {
-    WSPortToDevice.forEach(function(device, port) {
-      if (mapping.get(port).readyState == 1 && !tested.has(port)) {
-        report.push({device: device, connected: true});
-        countWSTested++;
-        tested.add(port);
-        console.log(port + ' 1');
-      }
-      else if (mapping.get(port).readyState == 3 && !tested.has(port)) {
-        report.push({device: device, connected: false});
-        countWSTested++;
-        tested.add(port);
-        console.log(port + ' 2');
-      }
-    });
-    await new Promise(r => setTimeout(r, 500));
-  }
-
-  // Close WebSockets
+// TODO: get ws port from station and use it to start device process
+function startWebAppCommProcess() {
   WSPortToDevice.forEach(function(device, port) {
-    mapping.get(port).close();
+    device['websocket_port'] = port;
   });
-  // Send event to overlay to update GUI
-  overlay.webContents.send('result_ws_test', JSON.stringify(report));
+  deviceListProcess = electron.utilityProcess.fork(path.join(__dirname, '/device_to_webApp.js'), 
+  ['8094']);
 }
-*/
+
+// Send error message to Web App
+function sendDeviceError(err, device, deviceID) {
+  deviceListProcess.postMessage({
+    header: "error",
+    sub_header: "deviceError",
+    errorData: err.toString(),
+    deviceName: device['name'],
+    deviceID: deviceID
+  });
+}
+
+function updateDeviceList(devices) {
+  deviceListProcess.postMessage({
+    header: 'deviceListUpdate',
+    deviceList: JSON.stringify(devices)
+  });
+}

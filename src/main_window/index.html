@@ -20,9 +20,9 @@
     background-color: rgb(255, 255, 255);
 }
   
-.row {
+.content {
     width: 100%;
-    height: 100%;
+    height: calc(100% - 25px);
 }
 
 body {
@@ -34,20 +34,28 @@ body {
   height: 100%;
   overflow: auto;
 }
+#menuElts::-webkit-scrollbar {
+  display: none;
+}
 .menuItemOpen {
   width: 100%;
-  height: 100%;
+  height: 50px;
   min-width: 100px;
   position: relative;
   display: flex;
   flex-direction: row;
+  border: none;
+  cursor: pointer;
+  background-color: rgb(222, 222, 222);
 }
 .menuItemClosed {
-  display: flex;
   width: 100%;
   height: 50px;
   max-width: 100%;
   position: relative;
+  border: none;
+  cursor: pointer;
+  background-color: rgb(222, 222, 222);
 }
 .menuIcon {
   width: 32px;
@@ -59,34 +67,53 @@ body {
   transform: translate(0, -50%);
   margin-left: 1px;
 }
+.menuIconClosed {
+  width: 32px;
+  height: 32px;
+  max-width: 32px;
+  max-height: 32px;
+  margin-top: 2px;
+}
 .menuText {
   position: relative;
   top: 50%;
-  width: 100%;
   transform: translate(0, -50%);
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-left: 5px;
+  margin-left: 8px;
   margin-right: 5px;
+  max-width: calc(100% - 64px);
 }
 .open {
   height: 50px;
   display: flex;
   flex-direction: row;
+  width: 100%;
 }
 .closeButton {
   min-width: 50px;
   min-height: 50px;
 }
+.openStatus {
+  float: right;
+}
+
+/* Top bar menu*/
+.header {
+  height: 25px;
+  background-color: black;
+}
 
 /* Minimize button */
-.header {
-  height: 50px;
-}
 .button_2 {
   width: 100%;
-  min-height: 50px;
-  padding: 0px 0px;
+  height: 50px;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  border: none;
+  cursor: pointer;
+  background-color: rgb(222, 222, 222);
 }
 
 /* Add App button */
@@ -99,6 +126,7 @@ body {
 .button_1 {
   width: 100%;
   height: inherit;
+  background-color: rgb(222, 222, 222);
 }
 
 .material-symbols-outlined {
@@ -110,6 +138,41 @@ body {
   color: rgb(110, 110, 110);
 }
 
+#minimize_icon {
+  position: relative;
+  top: 50%;
+  transform: translate(0, -50%);
+  margin-left: 5px;
+  margin-right: 5px;
+}
+#minimize_text {
+  position: relative;
+  top: 50%;
+  transform: translate(0, -50%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 8px;
+  margin-right: 5px;
+  max-width: calc(100% - 64px);
+}
+
+.topButtons {
+  border: none;
+  background-color: black;
+  padding: 0px;
+  margin-left: 3px;
+  margin-right: 3px;
+  height: 100%;
+}
+.topButtons > .material-symbols-outlined {
+  color: white;
+  cursor: pointer
+}
+.topButtons:disabled > .material-symbols-outlined {
+  color: grey;
+  cursor: default;
+}
+
 </style>
 
 <html>
@@ -118,22 +181,30 @@ body {
     <title>Mendix Player</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
-    <body class="body">
-      <div class="row">
-        <div class="column-1">
-          <button class="button_2" type="button" id="button_2">
-            Minimize
-          </button>
-          <div id="menuElts">
-          </div>
-          <div class="footer">
-            <button class="button_1" type="button" id="button_1">
-              Add App
-            </button>
-          </div>
+  <body class="body">
+    <div class="header">
+      <button class="topButtons" id="newWindow"><span class="material-symbols-outlined"> add </span></button>
+      <button class="topButtons" id="reload"><span class="material-symbols-outlined">refresh</span></button>
+      <button class="topButtons" id="goBack"><span class="material-symbols-outlined">arrow_back</span></button>
+      <button class="topButtons" id="goForward"><span class="material-symbols-outlined">arrow_forward</span></button>
+      <button class="topButtons" id="toggle_dev_tools"><span class="material-symbols-outlined">code</span></button>
+    </div>
+    <div class="content">
+      <div class="column-1">
+        <button class="button_2" type="button" id="button_2">
+          <span id="minimize_icon" class="material-symbols-outlined">menu</span>
+          <div id="minimize_text">Minimize</div>
+        </button>
+        <div id="menuElts">
         </div>
-        <div class="column-2"></div>
+        <div class="footer">
+          <button class="button_1" type="button" id="button_1">
+            Menu
+          </button>
+        </div>
       </div>
-      <script src="./renderer.js"></script>
-    </body>
+      <div hidden class="column-2"></div>
+    </div>
+    <script src="./renderer.js"></script>
+  </body>
 </html>
