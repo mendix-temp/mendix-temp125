@@ -503,6 +503,7 @@ function handleJSON (config, configExists) {
     .then(json => {
       config["apps"] = json["apps"];
       config["devices"] = json["devices"];
+      config["station_name"] = json["station_name"];
       fs.writeFile("config.json", JSON.stringify(config, null, 2), function(err) {
         if (err) {
           console.log(err)
@@ -651,7 +652,7 @@ function startWebAppCommProcess() {
     device['websocket_port'] = port;
   });
   deviceListProcess = electron.utilityProcess.fork(path.join(__dirname, '/device_to_webApp.js'), 
-  ['8094']);
+  ['8094', config["station_name"]]);
 }
 
 // Send error message to Web App

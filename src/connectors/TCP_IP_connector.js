@@ -11,6 +11,7 @@ var net = require('net'),
 	suffix, encoding, argv = null;
 
 let currentWSClient = null;
+let broadcast =  null;
 
 // Send an HTTP error response
 var http_error = function (response, code, msg) {
@@ -170,7 +171,10 @@ function initWsServer() {
 
 	tcpHost = parser.get("Host");
 	tcpPort = parser.get("Port");
-	// broadcast = parser.get("Broadcast");
+	if (parser.has("broadcast")) {
+		broadcast = parser.get("broadcast");
+	}
+
 	suffix = parser.get("Suffix");
 	if (!suffix) {
 		suffix = "";

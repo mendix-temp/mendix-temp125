@@ -1,4 +1,5 @@
 const WebSocket = require('ws');
+const os = require('os');
 
 var http = require('http'),
 	url = require('url'),
@@ -72,7 +73,9 @@ webServer.listen(process.argv[2], function() {
                 console.log("Sending device list to web App.");
                 wsc.send(JSON.stringify({
 					header: "devices",
-					data: devices
+					devices: devices,
+					computerName: os.hostname(),
+					stationName: process.argv[3]
 				}));
             }
             else {

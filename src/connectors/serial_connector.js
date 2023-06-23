@@ -16,6 +16,7 @@ var http = require('http'),
 	argv = null;
 
 let currentWSClient = null;
+let broadcast = null;
 
 var http_error = function (response, code, msg) {
 	response.writeHead(code, {"Content-Type": "text/plain"});
@@ -69,7 +70,7 @@ var new_client = function(webSocketClient, req)  {
 	console.log('Version ' + webSocketClient.protocolVersion + ', subprotocol: ' + webSocketClient.protocol);
 
 
-	if (wsServer.clients.size == 1) {
+	if (!serialClient) {
 		// Initialize SerialPort connection
 		serialClient = new SerialPort({
 			path: serialPort,
@@ -79,8 +80,16 @@ var new_client = function(webSocketClient, req)  {
 			stopBits: parseInt(serialStopBits),
 			flowControl: (serialFlowControl.toLowerCase() == "none") ? false : true
 		},
-		function() {
-			console.log("Connected to Serial device on " + serialPort);
+		function(err) {
+			if (err) {
+				process.parentPort.postMessage({
+					error: err,
+					deviceID: deviceID
+				});
+			}
+			else {
+				console.log("Connected to Serial device on " + serialPort);
+			}
 		});
 
 		var buffer = "";
@@ -131,6 +140,7 @@ var new_client = function(webSocketClient, req)  {
 		});
 		serialClient.on('error', function(err) {
 			console.log('Serial client on ' + serialPort + ' error: ' + err);
+			serialClient.close();
 			wsServer.clients.forEach((client) => {
 				client.close();
 			});
@@ -151,8 +161,9 @@ var new_client = function(webSocketClient, req)  {
 		}
 
 		// Close serial port connection if nothing is connected to it
-		if (wsServer.clients.size == 1) {
+		if (wsServer.clients.size == 0) {
 			serialClient.close();
+			serialClient = null;
 		}
 	});
 	webSocketClient.on('error', function (err) {
@@ -182,8 +193,10 @@ function initWsServer() {
     serialParity = parser.get("Parity");
     serialStopBits = parser.get("StopBits");
     serialFlowControl = parser.get("FlowControl");
-	broadcast = parser.get("Broadcast");
-
+	if (parser.has("broadcast")) {
+		broadcast = parser.get("Broadcast");
+	}
+	
 	suffix = parser.get("Suffix");
 	if (!suffix) {
 		suffix = "";

@@ -1,55 +1,67 @@
 {
-  "url_station": "https://stations100-sandbox.mxapps.io/rest/getstationconfig/v1/GetStationConfig?TenantName=Test&StationName=Station1",
+  "url_station": "http://stations100-sandbox.mxapps.io/rest/getstationconfig/v1/GetStationConfig?HostName=DESKTOP-B93B29U",
   "apps": [
     {
-      "name": "Google_0",
-      "url": "https://google.com/"
+      "name": "Station_Management",
+      "url": "https://stations100-sandbox.mxapps.io/"
     },
     {
-      "name": "Google_1",
-      "url": "https://google.com/"
+      "name": "Device_Terminal",
+      "url": "https://mxstationdeviceterminal-sandbox.mxapps.io/"
     },
     {
-      "name": "Github_0",
-      "url": "https://github.com/"
+      "name": "Scale_Control",
+      "url": "https://stationscalecontrol-sandbox.mxapps.io/index.html?profile=Responsive"
     },
     {
-      "name": "Github_1",
-      "url": "https://github.com/"
-    },
-    {
-      "name": "Mendix_0",
-      "url": "https://mendix.com/"
-    },
-    {
-      "name": "Mendix_1",
-      "url": "https://mendix.com/"
-    },
-    {
-      "name": "ultralongnamefortestingpurposesit'ssolongit'simpossibletoread",
-      "url": "https://mendix.com/"
+      "name": "Label_Printer",
+      "url": "https://stationvirtuallabelprinter-sandbox.mxapps.io/index.html?profile=Responsive"
     }
   ],
   "devices": [
     {
-      "name": "Scale_TCP/IP",
-      "websocket_port": "8091",
-      "type": "TCP_IP",
+      "name": "COM3 (loop)",
+      "websocket_port": "8097",
+      "driver_name": "Serial",
       "properties": [
         {
-          "name": "Host",
-          "value": "129.73.5.207"
+          "name": "Port",
+          "value": "COM3"
         },
         {
-          "name": "Port",
-          "value": "1701"
+          "name": "BitsPerSecond",
+          "value": "9600"
+        },
+        {
+          "name": "DataBits",
+          "value": "8"
+        },
+        {
+          "name": "Parity",
+          "value": "None"
+        },
+        {
+          "name": "StopBits",
+          "value": "1"
+        },
+        {
+          "name": "FlowControl",
+          "value": "None"
+        },
+        {
+          "name": "Encoding",
+          "value": "ascii"
+        },
+        {
+          "name": "Suffix",
+          "value": "\\r\\n"
         }
       ]
     },
     {
-      "name": "Scale_Serial",
-      "websocket_port": "8092",
-      "type": "Serial",
+      "name": "COM4 (loop)",
+      "websocket_port": "8098",
+      "driver_name": "Serial",
       "properties": [
         {
           "name": "Port",
@@ -74,38 +86,103 @@
         {
           "name": "FlowControl",
           "value": "None"
-        }
-      ]
-    },
-    {
-      "name": "A_Broken_Test",
-      "websocket_port": "8091",
-      "type": "TCP_IP",
-      "properties": [
-        {
-          "name": "Host",
-          "value": "129.73.5.207"
         },
         {
-          "name": "Port",
-          "value": "1701"
+          "name": "Encoding",
+          "value": "ascii"
+        },
+        {
+          "name": "Suffix",
+          "value": "\\r\\n"
         }
       ]
     },
     {
-      "name": "Another Broken Test",
+      "name": "Scale_Mettler (COM3)",
       "websocket_port": "8092",
-      "type": "TCP_IP",
+      "device_class": "Scale",
+      "driver_name": "Serial",
+      "properties": [
+        {
+          "name": "Port",
+          "value": "COM3"
+        },
+        {
+          "name": "BitsPerSecond",
+          "value": "9600"
+        },
+        {
+          "name": "DataBits",
+          "value": "8"
+        },
+        {
+          "name": "Parity",
+          "value": "None"
+        },
+        {
+          "name": "StopBits",
+          "value": "1"
+        },
+        {
+          "name": "FlowControl",
+          "value": "None"
+        },
+        {
+          "name": "Encoding",
+          "value": "ascii"
+        },
+        {
+          "name": "Suffix",
+          "value": "\\r\\n"
+        }
+      ]
+    },
+    {
+      "name": "TCP server",
+      "websocket_port": "8099",
+      "driver_name": "TCP_IP_Server",
       "properties": [
         {
           "name": "Host",
-          "value": "129.73.5.207"
+          "value": "127.0.0.1"
         },
         {
           "name": "Port",
-          "value": "1907"
+          "value": "1702"
+        },
+        {
+          "name": "Encoding",
+          "value": "ascii"
+        },
+        {
+          "name": "Suffix",
+          "value": "\\r\\n"
+        }
+      ]
+    },
+    {
+      "name": "TCP client",
+      "websocket_port": "8096",
+      "driver_name": "TCP_IP",
+      "properties": [
+        {
+          "name": "Host",
+          "value": "127.0.0.1"
+        },
+        {
+          "name": "Port",
+          "value": "1702"
+        },
+        {
+          "name": "Encoding",
+          "value": "ascii"
+        },
+        {
+          "name": "Suffix",
+          "value": "\\r\\n"
         }
       ]
     }
-  ]
+  ],
+  "station_name": "PC Louis"
 }
