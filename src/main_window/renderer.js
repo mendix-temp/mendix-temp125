@@ -252,3 +252,5 @@ document.getElementById('goForward').addEventListener('click', function() {
 document.getElementById('toggle_dev_tools').addEventListener('click', function() {
     window.electronAPI.toggle_dev_tools(windowID);
 });
+
+console.log('Mendix4Ever');

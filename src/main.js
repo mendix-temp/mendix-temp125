@@ -14,6 +14,10 @@ let deviceListProcess = null;
 // Needed for squirrel
 if (require('electron-squirrel-startup')) electron.app.quit();
 
+// Autoupdate: default settings are check at startup and every 10 minutes for update
+// if found, download in backgroud and prompt user for update. 
+require('update-electron-app')()
+
 /*##################################################################################/*
 ----------------------------------DATA STRUCTURES-----------------------------------
 /*##################################################################################*/
@@ -83,7 +87,7 @@ electron.app.whenReady().then(() => {
   createListeners(mainWindow, overlay, true);
 
   // Hide default window menu
-  electron.Menu.setApplicationMenu(null);
+  // electron.Menu.setApplicationMenu(null);
 });
 
 
@@ -569,7 +573,7 @@ function handleDevices(config) {
 
     WSPortToDevice.get(config["devices"][i]["websocket_port"])["connected"] =  "true";
     PIDToProcess.set(i, child);
-    errorHandling(child);    
+    IPC(child);    
   }
   var deviceList = new Array();
   WSPortToDevice.forEach(function(device, port) {
@@ -596,7 +600,7 @@ function retryConnection(device, deviceID) {
   [JSON.stringify(device)]);
 
   PIDToProcess.set(deviceID, child);
-  errorHandling(child);    
+  IPC(child);    
 }
 
 function portInUse(device, deviceID) {
@@ -610,35 +614,41 @@ function portInUse(device, deviceID) {
   });
 }
 
-function errorHandling(child) {
-  child.once('message', (data) => {
-    PIDToProcess.get(parseInt(data.deviceID)).kill();
-    PIDToProcess.delete(parseInt(data.deviceID));
-    response = electron.dialog.showMessageBoxSync(mainWindow, {
-      message: 'An error occured during connection to device ' +
-               config["devices"][data.deviceID]["name"] + ':\n' + data.error,
-      type: 'error',
-      buttons: ['Retry Connection', 'Ignore'],
-      title: config["devices"][data.deviceID]["name"],
-    });
-    // case 0 = Retry Connection button pressed
-    // case 1 and default are ignore and close message window
-    // In that case, remove device from device list and send error message
-    // and updated device list to MXConn
-    switch (response) {
-      case 0:
-        retryConnection(config["devices"][data.deviceID], parseInt(data.deviceID));
-        break;
-      case 1:
-        WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["connected"] = "false";
-        sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
-        deviceDisconnected(data.deviceID);
-        break;
-      default:
-        WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["connected"] = "false";
-        sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
-        deviceDisconnected(data.deviceID);
-        break;
+// Receive messages from child processes (not renderer processes)
+function IPC(child) {
+  child.on('message', (data) => {
+    if (data.header == 'error') {
+      PIDToProcess.get(parseInt(data.deviceID)).kill();
+      PIDToProcess.delete(parseInt(data.deviceID));
+      response = electron.dialog.showMessageBoxSync(mainWindow, {
+        message: 'An error occured during connection to device ' +
+                config["devices"][data.deviceID]["name"] + ':\n' + data.error,
+        type: 'error',
+        buttons: ['Retry Connection', 'Ignore'],
+        title: config["devices"][data.deviceID]["name"],
+      });
+      // case 0 = Retry Connection button pressed
+      // case 1 and default are ignore and close message window
+      // In that case, remove device from device list and send error message
+      // and updated device list to MXConn
+      switch (response) {
+        case 0:
+          retryConnection(config["devices"][data.deviceID], parseInt(data.deviceID));
+          break;
+        case 1:
+          WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["connected"] = "false";
+          sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
+          deviceDisconnected(data.deviceID);
+          break;
+        default:
+          WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["connected"] = "false";
+          sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
+          deviceDisconnected(data.deviceID);
+          break;
+      }
+    }
+    else if (data.header == 'newDevice') {
+      addDevice(data.data);
     }
   });
 }
@@ -670,5 +680,14 @@ function updateDeviceList(devices) {
   deviceListProcess.postMessage({
     header: 'deviceListUpdate',
     deviceList: JSON.stringify(devices)
+  });
+}
+
+// deviceRaw is the JSON stringified version of the device
+function addDevice(deviceRaw) {
+  config['devices'].push(JSON.parse(deviceRaw));
+  deviceListProcess.postMessage({
+    header: 'newDevice',
+    data: deviceRaw
   });
 }

@@ -1,7 +1,7 @@
 {
   "name": "mendix-player",
   "productName": "mendix-player",
-  "version": "1.0.0",
+  "version": "0.0.3",
   "description": "My Electron application description",
   "main": "src/main.js",
   "scripts": {
@@ -11,6 +11,10 @@
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\""
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mendix-temp/mendix-temp125.git"
+  },
   "keywords": [],
   "author": "z004spnr",
   "license": "MIT",
@@ -19,7 +23,9 @@
     "electron-squirrel-startup": "^1.0.0",
     "mime": "^3.0.0",
     "path": "^0.12.7",
+    "pcsclite": "^1.0.1",
     "serialport": "^11.0.0",
+    "update-electron-app": "^2.0.1",
     "ws": "^8.13.0"
   },
   "devDependencies": {
@@ -28,6 +34,7 @@
     "@electron-forge/maker-rpm": "^6.1.1",
     "@electron-forge/maker-squirrel": "^6.1.1",
     "@electron-forge/maker-zip": "^6.1.1",
+    "@electron-forge/publisher-github": "^6.2.1",
     "electron": "24.3.0"
   }
 }

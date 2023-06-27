@@ -50,7 +50,7 @@ var http_request = function (request, response) {
 let wsServer;
 let webServer = http.createServer(http_request);
 
-let devices = "[]";
+let devices = [];
 
 wsServer = new WebSocketServer({
 	server: webServer,
@@ -114,5 +114,14 @@ process.parentPort.on('message', (message) => {
 			}
 		});
 		return;
+	}
+	else if (message.data.header === 'newDevice') {
+		let newDevice = JSON.parse(message.data.data);
+		devices.push(newDevice);
+		wsServer.clients.forEach(client => {
+			if (client.readyState == WebSocket.OPEN) {
+				client.send(JSON.stringify(message.data));
+			}
+		});
 	}
 });

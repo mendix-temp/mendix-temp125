@@ -16,6 +16,10 @@
     {
       "name": "Label_Printer",
       "url": "https://stationvirtuallabelprinter-sandbox.mxapps.io/index.html?profile=Responsive"
+    },
+    {
+      "name": "WS_Tester",
+      "url": "https://livepersoninc.github.io/ws-test-page/"
     }
   ],
   "devices": [
@@ -182,6 +186,12 @@
           "value": "\\r\\n"
         }
       ]
+    },
+    {
+      "name": "PCSC",
+      "websocket_port": "8201",
+      "driver_name": "pcsc",
+      "properties": []
     }
   ],
   "station_name": "PC Louis"

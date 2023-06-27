@@ -125,6 +125,7 @@ var new_client = function(webSocketClient, req)  {
 				client.close();
 			});
 			process.parentPort.postMessage({
+				header: 'error',
 				error: err,
 				deviceID: deviceID
 			});
@@ -199,6 +200,7 @@ function initWsServer() {
 	});
 	webServer.on('error', (e) => {
 		process.parentPort.postMessage({
+			header: 'error',
 			error: e,
 			deviceID: deviceID
 		});

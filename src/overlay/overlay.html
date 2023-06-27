@@ -5,6 +5,10 @@
   width: 33.33%;
 }
 
+body {
+  margin: 0;
+}
+
 .row:after {
   content: "";
   display: table;
@@ -73,6 +77,88 @@ button {
   flex-wrap: wrap;
 }
 
+/* SETTINGS */
+#settings-header {
+  height: 50px;
+  width: 100%;
+  display: flex;
+  position: fixed;
+  border-bottom: 1px #cfcfcf solid;
+}
+#settings-body {
+  height: calc(100% - 50px);
+  width: 100%;
+  display: flex;
+  position: absolute;
+  top: 50px;
+  justify-content: center;
+}
+#settings-icon {
+  position: relative;
+  top: 50%;
+  transform: translate(0, -50%);
+  margin-left: 8px;
+  margin-right: 8px;
+}
+#settings-title {
+  width: calc(100% - 100px);
+  text-align: center;
+  margin-top: 9px;
+  font-family: "Google Sans",Roboto,Arial,sans-serif;
+  font-size: 28px;
+}
+#backFromSettings {
+  height: 30px;
+  width: 60px;
+  border-radius: 25px;
+  margin: 9px;
+  border: none;
+  background: #f7f7f7;
+  cursor: pointer;
+  transition: 250ms;
+  position: fixed;
+  left: 0;
+}
+#backFromSettings:hover {
+  background: #cbcbcb;
+}
+.settings-content {
+  height: 300px;
+  width: 500px;
+  border: 1px #b7b7b7 solid;
+  border-radius: 9px;
+  margin: 25px;
+  padding: 8px;
+}
+.description-title {
+  font-family: "Google Sans",Roboto,Arial,sans-serif;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+.description-content {
+  font-family: "Google Sans",Roboto,Arial,sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6e6e6e;
+  padding-bottom: 8px;
+  border-bottom: #b7b7b7 1px solid;
+}
+.content-options {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.content-options > input {
+  width: 250px;
+  height: 30px;
+  border-radius: 25px;
+  border: none;
+  background-color: #f7f7f7;
+  padding-left: 4px;
+}
+
+
 /* Google icons settings */
 .material-symbols-outlined {
   font-variation-settings:
@@ -89,7 +175,7 @@ button {
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
 <div id="menu">
-  <body id="body_1" style="background-color: rgb(222, 222, 222);">
+  <body id="body" style="background-color: white;">
     <div id="listItems">
         <div class="column" id="column_0">
 
@@ -108,6 +194,7 @@ button {
   <div class="diagnostic">
     <button id="Device_List">Device List</button>
     <button id="Refresh_Config">Refresh Config</button>
+    <button id="Settings">Settings</button>
   </div>
 </div>
 <div id="test" style="display: none;">
@@ -143,5 +230,28 @@ button {
       </div>
     </div>
   </body>
+</div>
+<div id="settings" style="display: none;">
+  <div id="settings-header">
+    <img id="settings-icon" class="menuIcon" src="./mendix-256.png">
+    <div id="settings-title">Settings</div>
+  </div>
+  <div id="settings-body">
+    <button id="backFromSettings">
+      <span class="material-symbols-outlined">arrow_back</span>
+    </button>
+    <div class="settings-content">
+      <div class="content-description">
+        <div class="description-title">This is a title</div>
+        <div class="description-content">This is the content. It is super long on purpose to be representative of a normal description of the settings. I am now going to write some useless stuff. Useless stuff. <br>
+          This is on a new line, such a nice line. 
+        </div>
+      </div>
+      <div class="content-options">
+        <label for="stationMgt">Station Management URL</label><input type="text" id="stationMgt" value="https://stations100-sandbox.mxapps.io/">
+      </div>
+    </div>
+  </div>
+  <div id="settings-footer"></div>
 </div>
 <script src="./overlay.js"></script>

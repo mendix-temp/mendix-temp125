@@ -186,3 +186,13 @@ document.getElementById("Refresh_Config").addEventListener('click', function () 
 
     window.electronAPI.refresh_config();
 });
+
+document.getElementById("Settings").addEventListener('click', function() {
+    document.getElementById('settings').setAttribute('style', 'display:block;');
+    document.getElementById('menu').setAttribute('style', 'display:none;');
+});
+
+document.getElementById("backFromSettings").addEventListener('click', function() {
+    document.getElementById('settings').setAttribute('style', 'display:none;');
+    document.getElementById('menu').setAttribute('style', 'display:block;');
+});
