@@ -50,15 +50,15 @@ function createDeviceList (report) {
         }
         properties = properties.slice(0, -2);
         tableRow += '<td>' + properties + '</div>';
-        tableRow += '<td id="' + report[i].websocket_port + '_status' + '">' + ((report[i].connected == 'true') ? 'Connected' : 'Disconnected') + '</div>';
-        tableRow += '<td><button id="' + report[i].websocket_port + '_openButton' + '" onclick="javascript:openWS(' + report[i].websocket_port + ')"' + ((report[i].connected == 'true') ? '' : 'disabled') + '>Connect</button></td>'
+        tableRow += '<td id="' + report[i].websocket_port + '_status' + '">' + ((report[i].available == 'true') ? 'Available' : 'Unavailable') + '</div>';
+        tableRow += '<td><button id="' + report[i].websocket_port + '_openButton' + '" onclick="javascript:openWS(' + report[i].websocket_port + ')"' + ((report[i].available == 'true') ? '' : 'disabled') + '>Connect</button></td>'
         tableRow += '<td><button id="' + report[i].websocket_port + '_closeButton' + '" onclick="javascript:closeWS(' + report[i].websocket_port + ')" disabled>Disconnect</button></td>'
         tableRow += '<td>' +
                         '<form id="' + report[i].websocket_port + '" action="javascript:testWS(' + report[i].websocket_port + ')">' +
                             '<input type="text" id="' + report[i].websocket_port + '_input' + '" disabled>' +
                         '</form>' +
                     '</td>';
-        tableRow += '<td><button id="' + report[i].websocket_port + '_sendButton" onclick="javascript:testWS(' + report[i].websocket_port + ')"' + ((report[i].connected == 'true') ? '' : 'disabled') + ' disabled>Send</button></td>';
+        tableRow += '<td><button id="' + report[i].websocket_port + '_sendButton" onclick="javascript:testWS(' + report[i].websocket_port + ')"' + ((report[i].available == 'true') ? '' : 'disabled') + ' disabled>Send</button></td>';
         tableRow += '<td id="' + report[i].websocket_port + '_response' + '">N/A</td>';
         tableRow += '</tr>';
         document.getElementById('devicesContent').innerHTML += tableRow;
@@ -152,11 +152,19 @@ window.electronAPI.update_WS_buttons((event, WSPort, enabled) => {
     }
 });
 
-window.electronAPI.device_disconnected((event, WSPort) => {
-    document.getElementById(WSPort + '_openButton').disabled = true;
-    document.getElementById(WSPort + '_closeButton').disabled = true;
-    document.getElementById(WSPort + '_sendButton').disabled = true;
-    document.getElementById(WSPort + '_status').innerHTML = 'Disconnected';
+window.electronAPI.device_availability_changed((event, WSPort, deviceAvailable) => {
+    if (deviceAvailable == 'false') {
+        document.getElementById(WSPort + '_openButton').disabled = true;
+        document.getElementById(WSPort + '_closeButton').disabled = true;
+        document.getElementById(WSPort + '_sendButton').disabled = true;
+        document.getElementById(WSPort + '_status').innerHTML = 'Unavailable';
+    }
+    else {
+        document.getElementById(WSPort + '_openButton').disabled = false;
+        document.getElementById(WSPort + '_closeButton').disabled = true;
+        document.getElementById(WSPort + '_sendButton').disabled = false;
+        document.getElementById(WSPort + '_status').innerHTML = 'Available';
+    }
 });
 
 /*###################################################################################/*

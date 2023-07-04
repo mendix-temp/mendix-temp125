@@ -131,7 +131,7 @@ function setBoundsViews(window) {
 // or is disconnected because of an error
 function deviceDisconnected(deviceID) {
   let WSPort = config["devices"][deviceID]["websocket_port"];
-  config["devices"][deviceID]["connected"] = "false";
+  config["devices"][deviceID]["available"] = "false";
   // Close WebSocket if it is currently open
   if (WSPortToWS.has(parseInt(WSPort))) {
     WSPortToWS.get(parseInt(WSPort)).close();
@@ -144,7 +144,7 @@ function deviceDisconnected(deviceID) {
 
   // Update all the overlays
   IDToWindowClass.forEach((windowObj, windowID) => {
-    windowObj.overlay.webContents.send('device_disconnected', WSPort);
+    windowObj.overlay.webContents.send('availability_changed', WSPort, 'false');
   });
 }
 
@@ -558,10 +558,10 @@ function handleDevices(config) {
   for (var i = 0; i < config["devices"].length; i++) {
     // Make sure that no two devices use the same port in config.json
     if (WSPortToDevice.has(config["devices"][i]["websocket_port"])) {
-      config["devices"][i]["connected"] = "false";
+      config["devices"][i]["available"] = "false";
       portInUse(config["devices"][i], i);
       WSPortToDevice.set((-i).toString(), config["devices"][i]);
-      WSPortToDevice.get((-i).toString())["connected"] =  "false";
+      WSPortToDevice.get((-i).toString())["available"] =  "false";
       continue;
     }
     WSPortToDevice.set(config["devices"][i]["websocket_port"], config["devices"][i]);
@@ -571,7 +571,7 @@ function handleDevices(config) {
     child = electron.utilityProcess.fork(path.join(__dirname, '/connectors/' + config["devices"][i]["driver_name"] + '_connector.js'), 
     [JSON.stringify(config["devices"][i])]);
 
-    WSPortToDevice.get(config["devices"][i]["websocket_port"])["connected"] =  "true";
+    WSPortToDevice.get(config["devices"][i]["websocket_port"])["available"] =  "false";
     PIDToProcess.set(i, child);
     IPC(child);    
   }
@@ -586,7 +586,7 @@ function handleDevices(config) {
   if (!deviceListProcess) {
     startWebAppCommProcess();
   }
-  updateDeviceList(config['devices']);
+  sendUpdateDeviceList(config['devices']);
 }
 
 // TODO: could combine retryConnection and handleDevices into 1 function
@@ -636,19 +636,22 @@ function IPC(child) {
           retryConnection(config["devices"][data.deviceID], parseInt(data.deviceID));
           break;
         case 1:
-          WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["connected"] = "false";
+          WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["available"] = "false";
           sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
           deviceDisconnected(data.deviceID);
           break;
         default:
-          WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["connected"] = "false";
+          WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["available"] = "false";
           sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
           deviceDisconnected(data.deviceID);
           break;
       }
     }
     else if (data.header == 'newDevice') {
-      addDevice(data.data);
+      sendAddDevice(data.data);
+    }
+    else if (data.header == 'statusUpdate') {
+      sendUpdateAvailableStatus(data.deviceName, data.newStatus, data.deviceID, data.websocket_port);
     }
   });
 }
@@ -676,7 +679,20 @@ function sendDeviceError(err, device, deviceID) {
   });
 }
 
-function updateDeviceList(devices) {
+function sendUpdateAvailableStatus(deviceName, deviceAvailable, deviceID, WSPort) {
+  deviceListProcess.postMessage({
+    header: "statusUpdate",
+    deviceName: deviceName,
+    deviceID: deviceID,
+    newStatus: deviceAvailable,
+    websocket_port: WSPort
+  });
+  IDToWindowClass.forEach(function(windowClassObj, windowID) {
+    windowClassObj.overlay.webContents.send('availability_changed', WSPort, deviceAvailable);
+  });
+}
+
+function sendUpdateDeviceList(devices) {
   deviceListProcess.postMessage({
     header: 'deviceListUpdate',
     deviceList: JSON.stringify(devices)
@@ -684,7 +700,7 @@ function updateDeviceList(devices) {
 }
 
 // deviceRaw is the JSON stringified version of the device
-function addDevice(deviceRaw) {
+function sendAddDevice(deviceRaw) {
   config['devices'].push(JSON.parse(deviceRaw));
   deviceListProcess.postMessage({
     header: 'newDevice',

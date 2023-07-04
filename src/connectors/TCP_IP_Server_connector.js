@@ -9,7 +9,7 @@ var net = require('net'),
 	WebSocket = require('ws'),
 
 	webServer, wsServer, buffer,
-	wsPort, deviceID,
+	wsPort, deviceID, deviceName,
 	tcpHost, tcpPort, tcpServer, suffix,
 	argv = null;
 
@@ -84,6 +84,7 @@ function initWsServer() {
 
 	wsPort = device.websocket_port;
 	deviceID = device.deviceID;
+	deviceName = device.name;
 
 	// Parse properties field of JSON
 	let parser = new Map();
@@ -125,6 +126,15 @@ function initWsServer() {
 
 	tcpServer = net.createServer();
 	tcpServer.listen(tcpPort, tcpHost);
+	// changes available status of device to 'true'
+	process.parentPort.postMessage({
+		header: 'statusUpdate',
+		deviceName: deviceName,
+		deviceID: deviceID,
+		newStatus: 'true',
+		websocket_port: wsPort
+	});
+
 	tcpServer.on('connection', function (tcpSocket) {
 		console.log('TCP client connected');
 		if (currentTCPSocket && currentTCPSocket.readyState != 'opening') {

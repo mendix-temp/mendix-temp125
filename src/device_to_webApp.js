@@ -106,7 +106,7 @@ process.parentPort.on('message', (message) => {
 		return;
 	}
 	else if (message.data.header === 'error') {
-		devices[message.data.deviceID].connected = "false";
+		devices[message.data.deviceID].available = "false";
 		console.log("Sending deviceError to web App.");
 		wsServer.clients.forEach(client => {
 			if (client.readyState == WebSocket.OPEN) {
@@ -118,6 +118,14 @@ process.parentPort.on('message', (message) => {
 	else if (message.data.header === 'newDevice') {
 		let newDevice = JSON.parse(message.data.data);
 		devices.push(newDevice);
+		wsServer.clients.forEach(client => {
+			if (client.readyState == WebSocket.OPEN) {
+				client.send(JSON.stringify(message.data));
+			}
+		});
+	}
+	else if (message.data.header === 'statusUpdate') {
+		devices[message.data.deviceID]["available"] = message.data.newStatus;
 		wsServer.clients.forEach(client => {
 			if (client.readyState == WebSocket.OPEN) {
 				client.send(JSON.stringify(message.data));

@@ -11,7 +11,7 @@ var http = require('http'),
 	webServer, wsServer, wsPort,
 	serialPort, serialBitRate, serialDataBits,
     serialParity, serialStopBits, serialFlowControl,
-	suffix, encoding, deviceID, serialClient,
+	suffix, encoding, deviceID, serialClient, deviceName,
 	argv = null;
 
 let currentWSClient = null;
@@ -82,6 +82,7 @@ var new_client = function(webSocketClient, req)  {
 		function(err) {
 			if (err) {
 				process.parentPort.postMessage({
+					header: 'error',
 					error: err,
 					deviceID: deviceID
 				});
@@ -177,8 +178,10 @@ var new_client = function(webSocketClient, req)  {
 function initWsServer() {
 	let device = JSON.parse(process.argv[2]);
 
+
 	wsPort = device.websocket_port;
 	deviceID = device.deviceID;
+	deviceName = device.name;
 
 	// Parse properties field of JSON
 	let parser = new Map();
@@ -220,9 +223,17 @@ function initWsServer() {
 	});
 	webServer.on('error', (e) => {
 		process.parentPort.postMessage({
+			header: 'header',
 			error: e,
 			deviceID: deviceID
 		});
+	});
+	process.parentPort.postMessage({
+		header: 'statusUpdate',
+		deviceName: deviceName,
+		deviceID: deviceID,
+		newStatus: 'true',
+		websocket_port: wsPort
 	});
 }
 initWsServer();

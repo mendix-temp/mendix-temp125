@@ -7,7 +7,7 @@ var net = require('net'),
 	WebSocketServer = require('ws').Server,
 
 	webServer, wsServer,
-	wsPort, tcpHost, tcpPort, deviceID, tcpClient,
+	wsPort, tcpHost, tcpPort, deviceID, tcpClient, deviceName,
 	suffix, encoding, argv = null;
 
 let currentWSClient = null;
@@ -163,6 +163,7 @@ function initWsServer() {
 
 	wsPort = device.websocket_port;
 	deviceID = device.deviceID;
+	deviceName = device.name;
 
 	// Parse properties field of JSON
 	let parser = new Map();
@@ -204,6 +205,13 @@ function initWsServer() {
 			error: e,
 			deviceID: deviceID
 		});
+	});
+	process.parentPort.postMessage({
+		header: 'statusUpdate',
+		deviceName: deviceName,
+		deviceID: deviceID,
+		newStatus: 'true',
+		websocket_port: wsPort
 	});
 }
 initWsServer();
