@@ -6,23 +6,24 @@
 
 .column-1 {
     float: left;
-    width: 15%;
+    width: 16.67%;
     height: 100%;
-    background-color: rgb(222, 222, 222);
+    background-color: #f8f8f8;
     display: flex;
     flex-direction: column;
+    border-right: 1px gray solid;
 }
 
 .column-2 { 
     float: left;
-    width: 85%;
+    width: 83.33%;
     height: 100%;
-    background-color: rgb(255, 255, 255);
+    background-color: #FFFFFF;
 }
   
 .content {
     width: 100%;
-    height: calc(100% - 25px);
+    height: calc(100% - 31px);
 }
 
 body {
@@ -39,23 +40,44 @@ body {
 }
 .menuItemOpen {
   width: 100%;
-  height: 50px;
+  height: 51px;
   min-width: 100px;
   position: relative;
   display: flex;
   flex-direction: row;
   border: none;
   cursor: pointer;
-  background-color: rgb(222, 222, 222);
+  background-color: #FFFFFF;
+  border-bottom: 1px gray solid;
+  padding: 0 8px 0 8px;
+}
+.menuItemOpen > span {
+  transform: translate(0, -50%); 
+  position: relative;
+  top: 50%;
+  font-size: 10px;
+  margin-left: auto;
 }
 .menuItemClosed {
   width: 100%;
-  height: 50px;
+  height: 51px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   max-width: 100%;
   position: relative;
   border: none;
   cursor: pointer;
-  background-color: rgb(222, 222, 222);
+  background-color: #ffffff;
+  border-bottom: 1px gray solid;
+  padding: 0;
+}
+.menuItemClosed > span {
+  position: absolute;
+  font-size: 6px;
+  font-variation-settings: 'FILL' 0, 'wght' 800, 'GRAD' 200, 'opsz' 48;
+  bottom: 1px;
+  left: 22px;    
 }
 .menuIcon {
   width: 32px;
@@ -72,7 +94,6 @@ body {
   height: 32px;
   max-width: 32px;
   max-height: 32px;
-  margin-top: 2px;
 }
 .menuText {
   position: relative;
@@ -100,12 +121,15 @@ body {
 
 /* Top bar menu*/
 .header {
-  height: 25px;
-  background-color: black;
+  height: 30px;
+  background-color: #f8f8f8;
+  border-bottom: gray 1px solid;
+  display: flex;
+  align-items: center;
 }
 
 /* Minimize button */
-.button_2 {
+.mainButton {
   width: 100%;
   height: 50px;
   position: relative;
@@ -113,20 +137,39 @@ body {
   flex-direction: row;
   border: none;
   cursor: pointer;
-  background-color: rgb(222, 222, 222);
+  background-color: white;
+  min-height: 50px;
 }
-
+.mainButton > span {
+  position: relative;
+  top: 50%;
+  transform: translate(0, -50%);
+  margin-left: 5px;
+  margin-right: 5px;
+  font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 200, 'opsz' 48;
+}
+.mainButton > div {
+  position: relative;
+  top: 50%;
+  transform: translate(0, -50%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 8px;
+  margin-right: 5px;
+  max-width: calc(100% - 64px);
+}
+#settingsButton {
+  border-top: 1px gray solid;
+}
+#minimizeButton {
+  border-bottom: 1px gray solid;
+}
 /* Add App button */
 .footer {
   position: relative;
   bottom: 0px;
   width: 100%;
   height: 50px;
-}
-.button_1 {
-  width: 100%;
-  height: inherit;
-  background-color: rgb(222, 222, 222);
 }
 
 .material-symbols-outlined {
@@ -138,34 +181,21 @@ body {
   color: rgb(110, 110, 110);
 }
 
-#minimize_icon {
-  position: relative;
-  top: 50%;
-  transform: translate(0, -50%);
-  margin-left: 5px;
-  margin-right: 5px;
-}
-#minimize_text {
-  position: relative;
-  top: 50%;
-  transform: translate(0, -50%);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-left: 8px;
-  margin-right: 5px;
-  max-width: calc(100% - 64px);
-}
-
 .topButtons {
   border: none;
-  background-color: black;
+  background-color: #f8f8f8;
   padding: 0px;
-  margin-left: 3px;
-  margin-right: 3px;
-  height: 100%;
+  height: 24px;
+  width: 24px;
+  border-radius: 13px;
+  margin: 5px;
+  transition: 250ms;
+}
+.topButtons:enabled:hover {
+  background-color: #e5e5e5;
 }
 .topButtons > .material-symbols-outlined {
-  color: white;
+  color: black;
   cursor: pointer
 }
 .topButtons:disabled > .material-symbols-outlined {
@@ -178,7 +208,7 @@ body {
 <html>
   <head>
     <meta charset="UTF-8">
-    <title>Mendix Player</title>
+    <title>Mendix Player - v0.0.6</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
   <body class="body">
@@ -191,15 +221,16 @@ body {
     </div>
     <div class="content">
       <div class="column-1">
-        <button class="button_2" type="button" id="button_2">
-          <span id="minimize_icon" class="material-symbols-outlined">menu</span>
-          <div id="minimize_text">Minimize</div>
+        <button class="mainButton" id="minimizeButton">
+          <span class="material-symbols-outlined">menu</span>
+          <div>Minimize</div>
         </button>
         <div id="menuElts">
         </div>
         <div class="footer">
-          <button class="button_1" type="button" id="button_1">
-            Menu
+          <button class="mainButton" id="settingsButton">
+            <span class="material-symbols-outlined">settings</span>
+            <div>Settings</div>
           </button>
         </div>
       </div>

@@ -19,49 +19,64 @@ function buttonFunction(button) {
 function createMenu(data) {
     // Generate buttons in overlay
     for (i = 0; i < data.length; i++) {
-        document.getElementById("column_" + (i % 3).toString()).innerHTML += 
+        document.getElementById("app-list-buttons").innerHTML += 
         '<div class="buttons">' +
-            '<button class="menuItem" onclick="buttonFunction(this)" type="button" id=' + data[i].name + ' data-url="' + data[i].url + '">' +
+            '<button class="menuItem" onclick="buttonFunction(this)" id=' + data[i].name + ' data-url="' + data[i].url + '">' +
                 '<img class="menuIcon" src="' + data[i].url +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
                 '<div class="menuText">' + data[i].name + '</div>' + 
             '</button>' +
-            '<button id="' + data[i].name + '_closeButton' + '" class="closeButton" onclick="closeApp(this.dataset.name)" data-name="' + data[i].name + '"hidden>' +
+            '<div><button id="' + data[i].name + '_closeButton' + '" class="overlay-button" onclick="closeApp(this.dataset.name)" data-name="' + data[i].name + '" style="display:none;">' +
                 '<span class="material-symbols-outlined">' +
                     'close' +
                 '</span>' +
-            '</button>' +
+            '</button></div>' +
         '</div>';
     }
 }
 
 function createDeviceList (report) {
     for (i = 0; i < report.length; i++) {        
-        var tableRow = '<tr>';
+        var tableRow = '<div class="device-row">';
 
-        tableRow += 
-            '<td>' + report[i].name + '</td>\n' +
-            '<td>' + report[i].websocket_port + '</td>\n' +
-            '<td>' + report[i].device_class + '</td>\n' + 
-            '<td>' + report[i].driver_name + '</td>\n';
+        tableRow += '<div class=row-0>' +
+            '<div>' +
+                '<div class="row-title">Name</div>' +
+                '<div class="important-test">' + report[i].name + '</div>\n' +
+            '</div>' +
+            '<div>' +
+                '<div class="row-title">Websocket Port</div>' +
+                '<div class="important-test">' + report[i].websocket_port + '</div>\n' +
+            '</div>' +
+            '<div>' +
+                '<div class="row-title">Class</div>' +
+                '<div class="important-test">' + report[i].device_class + '</div>\n' +
+            '</div>' +
+            '<div>' +
+                '<div class="row-title">Driver</div>' +
+                '<div class="important-test">' + report[i].driver_name + '</div>\n' +
+            '</div>';
 
         let properties = "";
         for (j = 0; j < report[i].properties.length; j++) {
             properties += report[i].properties[j].value + ', ';
         }
         properties = properties.slice(0, -2);
-        tableRow += '<td>' + properties + '</div>';
-        tableRow += '<td id="' + report[i].websocket_port + '_status' + '">' + ((report[i].available == 'true') ? 'Available' : 'Unavailable') + '</div>';
-        tableRow += '<td><button id="' + report[i].websocket_port + '_openButton' + '" onclick="javascript:openWS(' + report[i].websocket_port + ')"' + ((report[i].available == 'true') ? '' : 'disabled') + '>Connect</button></td>'
-        tableRow += '<td><button id="' + report[i].websocket_port + '_closeButton' + '" onclick="javascript:closeWS(' + report[i].websocket_port + ')" disabled>Disconnect</button></td>'
-        tableRow += '<td>' +
+        tableRow += '<div>' +
+                        '<div class="row-title">Properties</div>' +
+                        '<div>' + properties + '</div>\n' +
+                    '</div></div>';
+        tableRow += '<div class=row-1><div id="' + report[i].websocket_port + '_status' + '">' + ((report[i].available == 'true') ? 'Available' : 'Unavailable') + '</div>';
+        tableRow += '<div><button id="' + report[i].websocket_port + '_openButton' + '" onclick="javascript:openWS(' + report[i].websocket_port + ')"' + ((report[i].available == 'true') ? '' : 'disabled') + ' class="overlay-button row-1-button">Connect</button></div>'
+        tableRow += '<div><button id="' + report[i].websocket_port + '_closeButton' + '" onclick="javascript:closeWS(' + report[i].websocket_port + ')" disabled class="overlay-button row-1-button">Disconnect</button></div>'
+        tableRow += '<div>' +
                         '<form id="' + report[i].websocket_port + '" action="javascript:testWS(' + report[i].websocket_port + ')">' +
                             '<input type="text" id="' + report[i].websocket_port + '_input' + '" disabled>' +
                         '</form>' +
-                    '</td>';
-        tableRow += '<td><button id="' + report[i].websocket_port + '_sendButton" onclick="javascript:testWS(' + report[i].websocket_port + ')"' + ((report[i].available == 'true') ? '' : 'disabled') + ' disabled>Send</button></td>';
-        tableRow += '<td id="' + report[i].websocket_port + '_response' + '">N/A</td>';
-        tableRow += '</tr>';
-        document.getElementById('devicesContent').innerHTML += tableRow;
+                    '</div>';
+        tableRow += '<div><button id="' + report[i].websocket_port + '_sendButton" onclick="javascript:testWS(' + report[i].websocket_port + ')"' + ((report[i].available == 'true') ? '' : 'disabled') + ' disabled class="overlay-button row-1-button">Send</button></div>';
+        tableRow += '<div class="response" id="' + report[i].websocket_port + '_response' + '">N/A</div>';
+        tableRow += '</div></div>';
+        document.getElementById('device-list').innerHTML += tableRow;
     }
 }
 
@@ -79,7 +94,6 @@ function closeWS(WSPort) {
 }
 function testWS(WSPort) {
     var message = document.getElementById(WSPort + '_input').value;
-    console.log(message);
     window.electronAPI.test_WebSocket(WSPort, message);
 }
 
@@ -94,8 +108,8 @@ window.electronAPI.handle_json((event, jsonData) => {
 // Make button reusable when app is successfully closed
 window.electronAPI.close_app_fromMain((event, name) => {
     document.getElementById(name).removeAttribute('disabled');
-    document.getElementById(name + "_closeButton").hidden = true;
-    document.getElementById(name).style.width = '100%';
+    document.getElementById(name).style.setProperty("cursor", "pointer");
+    document.getElementById(name + "_closeButton").style.setProperty("display", "none");
 });
 
 // Receive device list from main and call to create interface
@@ -115,23 +129,21 @@ window.electronAPI.devices_handled((event) => {
 // Update buttons in overlay when app is opened from mainWindow
 window.electronAPI.app_opened_main((event, appName) => {
     document.getElementById(appName).disabled = true;
-    document.getElementById(appName + "_closeButton").hidden = false;
-    document.getElementById(appName).style.width = '80%';
+    document.getElementById(appName).style.setProperty("cursor", "default");
+    document.getElementById(appName + "_closeButton").style.setProperty("display", "flex");
 });
 
 window.electronAPI.app_opened_overlay((event, appName) => {
-    document.getElementById(appName + "_closeButton").hidden = false;
-    document.getElementById(appName).style.width = '80%';
+    document.getElementById(appName).style.setProperty("cursor", "default");
+    document.getElementById(appName + "_closeButton").style.setProperty("display", "flex");
 });
 
 window.electronAPI.clear_overlay((event) => {
     // Remove app buttons in overlay
-    for (i = 0; i < 3; i++) {
-        document.getElementById("column_" + (i % 3).toString()).innerHTML = '';
-    }
+    document.getElementById("app-list-buttons").innerHTML = '<div class="settings-title">Application List</div>';
 
     // Remove devices list in overlay
-    document.getElementById('devicesContent').innerHTML = '';
+    document.getElementById('device-list').innerHTML = '';
 
     // Tell process to recreate devices list next time devices menu is open
     deviceListCreated = false;
@@ -172,14 +184,14 @@ window.electronAPI.device_availability_changed((event, WSPort, deviceAvailable) 
 /*###################################################################################*/
 // Start WebSocket test when button is clicked
 document.getElementById("Device_List").addEventListener('click', function () {
-    document.getElementById('test').setAttribute('style', 'display:block;');
+    document.getElementById('test').setAttribute('style', 'display:flex;');
     document.getElementById('menu').setAttribute('style', 'display:none;');
 });
 
 // Exit WebSocket test window when button is clicked
 document.getElementById("backFromTestMenu").addEventListener('click', function () {
     document.getElementById('test').setAttribute('style', 'display:none;');
-    document.getElementById('menu').setAttribute('style', 'display:block;');
+    document.getElementById('menu').setAttribute('style', 'display:flex;');
 });
 
 document.getElementById("Refresh_Config").addEventListener('click', function () {

@@ -87,7 +87,7 @@ electron.app.whenReady().then(() => {
   createListeners(mainWindow, overlay, true);
 
   // Hide default window menu
-  // electron.Menu.setApplicationMenu(null);
+  electron.Menu.setApplicationMenu(null);
 });
 
 
@@ -97,10 +97,10 @@ electron.app.whenReady().then(() => {
 // Return a Rectangle object that is the size of the BrowserView
 function getBoundsView(window) {
   var currentBounds = window.getContentBounds();
-  currentBounds['x'] = IDToWindowClass.get(window.id).sideMenuOpen ? Math.ceil(0.15 * currentBounds['width']) : 50;
+  currentBounds['x'] = IDToWindowClass.get(window.id).sideMenuOpen ? Math.ceil(0.1667 * currentBounds['width']) + 1 : 51;
   currentBounds['width'] = currentBounds['width'] - currentBounds['x'];
-  currentBounds['height'] = currentBounds['height'] - 25;
-  currentBounds['y'] = 25;
+  currentBounds['height'] = currentBounds['height'] - 30;
+  currentBounds['y'] = 30;
   return currentBounds;
 }
 
@@ -357,7 +357,7 @@ electron.ipcMain.on('new_window', (event) => {
     },
     width: 1024,
     height: 576,
-    show: true
+    show: false
   });
   newWindow.loadFile('src/main_window/index.html');
 
@@ -427,6 +427,7 @@ function createListeners(someWindow, someOverlay, isFirstWindow) {
   // Resize html body so that it fits perfectly, regardless of screen resolution
   someWindow.on('ready-to-show', (event) => {
     someWindow.webContents.send('resize_body', someWindow.getContentBounds()['height']);
+    someWindow.maximize();
     someWindow.show();
   });
 
@@ -651,6 +652,7 @@ function IPC(child) {
       sendAddDevice(data.data);
     }
     else if (data.header == 'statusUpdate') {
+      WSPortToDevice.get(data.websocket_port)['available'] = data.newStatus;
       sendUpdateAvailableStatus(data.deviceName, data.newStatus, data.deviceID, data.websocket_port);
     }
   });
