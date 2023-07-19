@@ -73,6 +73,58 @@ called on the page.
 Once this is setup, the developer simply needs to define how to react to events (message, websocket open, websocket error, ...) in the module StationInterface, and to connect to a device using the provided nanoflows. 
 Then, the developer can use the SUB_Send_Message nanoflow to communicate with the devices. 
 
+### Driver dependent message format
+<details>
+  <summary><b>Bluetooth BLE</b></summary>
+  <br>
+ 
+   Message to device:
+  - 0#`ServiceUUID`#`CharacteristicUUID` : Subscribe to characteristic `CharacteristicUUID` from service `ServiceUUID`
+  - 1#`ServiceUUID`#`CharacteristicUUID` : Unsubscribe from characteristic `CharacteristicUUID` from service `ServiceUUID`
+  - 2#`ServiceUUID`#`CharacteristicUUID` : Read characteristic `CharacteristicUUID` from service `ServiceUUID`
+  - 3#`ServiceUUID`#`CharacteristicUUID` : Write to characteristic `CharacteristicUUID` from service `ServiceUUID`
+
+   Response from device: 
+  - `CharacteristicUUID`#`Response`
+
+## 
+</details>
+
+<details>
+  <summary><b>PCSC Card Reader driver</b></summary>
+  <br>
+ 
+   Message to device:
+  - Send instruction in hexadecimal as a string
+
+   Response from device: 
+  - 0# : Card connected
+  - 1# : Card disconnected
+  - 2#`Response` : `Response` from device as raw hexadecimal
+  - 3#`Error` : `Error` message from device
+
+## 
+</details>
+
+<details>
+  <summary><b>File driver</b></summary>
+  <br>
+ 
+   Message to device:
+  - 0#`Directory` : Watch for changes in `Directory` (if directory is a file path, then watch for changes in 
+  - 1#`Directory` : Watch for changes in `Directory`  
+  - 2#`File path` : Read file at `File path`
+  - 3#`File path`#`flag` : Write to file at `File path`. `flag` can be 'w' for overwrite, 'a' for append, or empty ('w' by default)
+
+   Response from device: 
+  - R#`File name` : `File name` was renamed (also triggered when file is created and deleted)
+  - C#`File name` : `File name` was changed
+  - D#`Data` : `Data` from file read
+  - E#`Error` : `Error` message from operating system
+
+## 
+</details>
+
 ### Template Applications
 
 A multitude of template applications have been built to give examples as to how the connector can be used to connect to local devices.  
@@ -84,8 +136,6 @@ A non-exhaustive list of such applications can be found below:
 - Station Virtual Scale
 - Station Scale Control
 - Station Terminal
-
-
 
 ## Code Organization
 
@@ -133,5 +183,3 @@ Every large file is separated into logical parts separated by large headers. Suc
 - lines   7 -> 106: Define functions that will be used later in the program
 - lines 107 -> 197: Send and receive messages to/from main process and perform necessary actions depending on message
 - lines 198 -> end: React to 'click' events
-
-# TODO: explain drivers
