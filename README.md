@@ -51,8 +51,7 @@ and a driver (Serial, TCP/IP, ...). Each type of driver has a list of properties
 #### The Station Connector
 
 The Station Connector is a Mendix Add-On Module that contains both Javascript code and Nanoflows that allow the communication with the local peripherals. It also provides a developer interface to easily 
-respond to events coming from devices and handle incoming data. A list of [Template Application](https://github.com/mendix-temp/mendix-temp125/edit/main/README.md#template-applications) has been created to give examples as to how the connector can be used. 
-
+respond to events coming from devices and handle incoming data. A list of [Template Application](https://github.com/mendix-temp/mendix-temp125/blob/main/README.md#template-applications) has been created to give examples as to how the connector can be used. 
 
 ![High-level architecture](https://github.com/mendix-temp/mendix-temp125/assets/133011381/41c2c959-5b48-476f-91da-a967e37e0a36)
 
