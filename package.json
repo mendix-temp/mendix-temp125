@@ -1,7 +1,7 @@
 {
   "name": "MendixPlayer",
   "productName": "Mendix Player",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "description": "My Electron application description",
   "main": "src/main.js",
   "scripts": {

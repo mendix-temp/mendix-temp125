@@ -58,7 +58,12 @@ electron.app.whenReady().then(() => {
     },
     width: 1024,
     height: 576,
-    show: false
+    show: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      height: 30,
+      color: '#f8f8f8'
+    },
   });
   mainWindow.loadFile('src/main_window/index.html');
 
@@ -91,7 +96,7 @@ electron.app.whenReady().then(() => {
   createListeners(mainWindow, overlay, true);
 
   // handle tray creation
-  tray = new electron.Tray(electron.nativeImage.createFromPath('./src/overlay/mendix-256.png'))
+  tray = new electron.Tray(electron.nativeImage.createFromPath(path.join(__dirname, '../icons/MXP-DarkBlue-Nurture.ico')));
   tray.setContextMenu(electron.Menu.buildFromTemplate([
     {
       label: 'Show App', click: function () {
@@ -109,6 +114,7 @@ electron.app.whenReady().then(() => {
       }
     }
   ]));
+  tray.setToolTip('Mendix Player');
   tray.on('click', (event) => {
     if (IDToWindowClass.size == 1) {
       IDToWindowClass.forEach((WindowClassObj, windowID) => {
@@ -118,7 +124,7 @@ electron.app.whenReady().then(() => {
   });
 
   // Hide default window menu
-  // electron.Menu.setApplicationMenu(null);
+  electron.Menu.setApplicationMenu(null);
 });
 
 
@@ -212,9 +218,8 @@ function refreshConfig() {
 
   login = new electron.BrowserWindow({
     webPreferences: {
-      preload: path.join(__dirname, '/login/preload.js')
+      preload: path.join(__dirname, '/login/preload.js'),
     }, 
-    //closable: false,
     parent: mainWindow, 
     modal: true,
     show: false 
@@ -393,7 +398,12 @@ electron.ipcMain.on('new_window', (event) => {
     },
     width: 1024,
     height: 576,
-    show: false
+    show: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      height: 30,
+      color: '#f8f8f8'
+    },
   });
   newWindow.loadFile('src/main_window/index.html');
 

@@ -127,8 +127,18 @@ body {
   display: flex;
   align-items: center;
 }
+.draggableArea {
+  app-region: drag;
+  width: 100%;
+  height: 30px;
+}
+.headerIcon {
+  height: calc(100% - 10px);
+  margin: 5px;
+  margin-left: 8px;
+}
 
-/* Minimize button */
+/* Minimize and Settings buttons */
 .mainButton {
   width: 100%;
   height: 50px;
@@ -139,13 +149,12 @@ body {
   cursor: pointer;
   background-color: white;
   min-height: 50px;
+  padding: 0;
 }
 .mainButton > span {
   position: relative;
-  top: 50%;
-  transform: translate(0, -50%);
-  margin-left: 5px;
-  margin-right: 5px;
+  top: 13px;
+  left: 13px;
   font-variation-settings: 'FILL' 0, 'wght' 200, 'GRAD' 200, 'opsz' 48;
 }
 .mainButton > div {
@@ -154,7 +163,7 @@ body {
   transform: translate(0, -50%);
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-left: 8px;
+  margin-left: 25px;
   margin-right: 5px;
   max-width: calc(100% - 64px);
 }
@@ -213,11 +222,13 @@ body {
 </head>
   <body class="body">
     <div class="header">
+      <img class="headerIcon" src="./../../icons/MXP-DarkBlue-Nurture.ico"> 
       <button class="topButtons" id="newWindow"><span class="material-symbols-outlined"> add </span></button>
-      <button class="topButtons" id="reload"><span class="material-symbols-outlined">refresh</span></button>
       <button class="topButtons" id="goBack"><span class="material-symbols-outlined">arrow_back</span></button>
       <button class="topButtons" id="goForward"><span class="material-symbols-outlined">arrow_forward</span></button>
+      <button class="topButtons" id="reload"><span class="material-symbols-outlined">refresh</span></button>
       <button class="topButtons" id="toggle_dev_tools"><span class="material-symbols-outlined">code</span></button>
+      <div class="draggableArea"></div>
     </div>
     <div class="content">
       <div class="column-1">
