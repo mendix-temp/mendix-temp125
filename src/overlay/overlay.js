@@ -9,7 +9,7 @@ function closeApp(appName) {
 }
 
 // Open app from overlay
-function buttonFunction(button) {
+function openApp(button) {
     window.electronAPI.open_app(button.id, button.dataset.url, windowID);
     document.getElementById(button.id).disabled = true;
 }
@@ -21,7 +21,7 @@ function createMenu(data) {
     for (i = 0; i < data.length; i++) {
         document.getElementById("app-list-buttons").innerHTML += 
         '<div class="buttons">' +
-            '<button class="menuItem" onclick="buttonFunction(this)" id=' + data[i].name + ' data-url="' + data[i].url + '">' +
+            '<button class="menuItem" onclick="openApp(this)" id=' + data[i].name + ' data-url="' + data[i].url + '">' +
                 '<img class="menuIcon" src="' + data[i].url +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
                 '<div class="menuText">' + data[i].name + '</div>' + 
             '</button>' +
@@ -34,6 +34,7 @@ function createMenu(data) {
     }
 }
 
+// Create list of devices in Device List of Settings
 function createDeviceList (report) {
     for (i = 0; i < report.length; i++) {        
         var tableRow = '<div class="device-row">';
@@ -207,12 +208,6 @@ document.getElementById("Refresh_Config").addEventListener('click', function () 
     window.electronAPI.refresh_config();
 });
 
-document.getElementById("Settings").addEventListener('click', function() {
-    document.getElementById('settings').setAttribute('style', 'display:block;');
-    document.getElementById('menu').setAttribute('style', 'display:none;');
-});
-
-document.getElementById("backFromSettings").addEventListener('click', function() {
-    document.getElementById('settings').setAttribute('style', 'display:none;');
-    document.getElementById('menu').setAttribute('style', 'display:block;');
+document.getElementById("logo-back").addEventListener('click', function() {
+    window.electronAPI.close_overlay(windowID);
 });

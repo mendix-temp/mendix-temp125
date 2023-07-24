@@ -81,6 +81,7 @@ var new_client = function(webSocketClient, req)  {
         newCharacteristic = await srv.discoverCharacteristicsAsync([instructions[2]]);
         newCharacteristic = newCharacteristic[0];
         switch (instructions[0]) {
+          // Subscribe
           case '0': {
             console.log('WebSocket to BLE request: subscribe to characteristic ' + instructions[2] + ' from service ' + instructions[1]);
             newCharacteristic.subscribe();

@@ -11,8 +11,10 @@ var http = require('http'),
 	webServer, wsServer, wsPort,
 	serialPort, serialBitRate, serialDataBits,
     serialParity, serialStopBits, serialFlowControl,
-	suffix, encoding, deviceID, serialClient, deviceName,
+	encoding, deviceID, serialClient, deviceName,
 	argv = null;
+
+var suffixOutAwait, suffixOutAdd, suffixInRemove = null;
 
 let currentWSClient = null;
 let broadcast = null;
@@ -92,17 +94,17 @@ var new_client = function(webSocketClient, req)  {
 			}
 		});
 
-		var buffer = "";
+		let bufferIn = "";
 
 		// Receive data from Serial client and send to WebSocket client
 		serialClient.on('data', function (data) {
 			try {
 				// Buffers data and send once separator is reached
-				if (suffix) {
-					buffer += data.toString();
-					var lines = buffer.split(suffix);
+				if (suffixInRemove) {
+					bufferIn += data.toString();
+					let lines = bufferIn.split(suffixInRemove);
 					while (lines.length > 1) {
-						msg = lines.shift();
+						let msg = lines.shift();
 						console.log('Serial to WebSocket message: ' + msg + 'on port: ' + wsPort);
 						if (!broadcast) {
 							currentWSClient.send(msg);
@@ -113,21 +115,20 @@ var new_client = function(webSocketClient, req)  {
 							});
 						}
 					}
-					buffer = lines.join(suffix);
+					bufferIn = lines.join(suffixInRemove);
 				}
 				// Send raw data
 				else {
-					console.log('Serial to WebSocket message: ' + msg + 'on port: ' + wsPort);
+					console.log('Serial to WebSocket message: ' + data + 'on port: ' + wsPort);
 					if (!broadcast) {
-						currentWSClient.send(msg);
+						currentWSClient.send(data);
 					}
 					else {
 						wsServer.clients.forEach((client) => {
-							client.send(msg);
+							client.send(data);
 						});
 					}
 				}
-				
 			} catch (e) {
 				console.log('WebSocket client error');
 			}
@@ -140,19 +141,35 @@ var new_client = function(webSocketClient, req)  {
 		});
 		serialClient.on('error', function(err) {
 			console.log('Serial client on ' + serialPort + ' error: ' + err);
-			serialClient.close();
 			wsServer.clients.forEach((client) => {
 				client.close();
 			});
 		});
 	}
     
+	let bufferOut = "";
 	// Receive data from WebSocket client and send to Serial client
-	webSocketClient.on('message', function(msg) {
-		console.log('WebSocket to Serial message: ' + msg + " on " + serialPort);
+	webSocketClient.on('message', function(data) {
+		// Bufferize if suffixOutAwait specified
+		if (suffixOutAwait) {
+			bufferOut += data;
+			let lines = bufferOut.split(suffixOutAwait);
+			while (lines.length > 1) {
+				let msg = lines.shift();
+				console.log('WebSocket to Serial message: ' + msg + ' on ' + serialPort);
+				// Send data to Serial Port device with suffix, if specified
+				serialClient.write(msg + suffixOutAdd, encoding);
+			}
+			bufferOut = lines.join(suffixOutAwait);
+		}
+		// Send raw data
+		else {
+			console.log('WebSocket to Serial message: ' + data + " on " + serialPort);
 
-		// Send data to Serial Port device with suffix, if specified
-		serialClient.write(msg + suffix, encoding);
+			// Send data to Serial Port device with suffix, if specified
+			serialClient.write(data + suffixOutAdd, encoding);
+		}
+		
 	});
 	webSocketClient.on('close', function (code, reason) {
 		console.log('WebSocket client disconnected: ' + code + ' [' + reason + ']');
@@ -174,7 +191,7 @@ var new_client = function(webSocketClient, req)  {
 	});
 };
 
-// Create WebSocket server and supports both http and https
+// Create WebSocket server
 function initWsServer() {
 	let device = JSON.parse(process.argv[2]);
 
@@ -198,18 +215,24 @@ function initWsServer() {
 	if (parser.has("broadcast")) {
 		broadcast = parser.get("Broadcast");
 	}
-	
-	suffix = parser.get("Suffix");
-	if (!suffix) {
-		suffix = "";
+
+	suffixOutAwait = parser.get("SuffixOutAwait");
+	suffixOutAdd = parser.get("SuffixOutAdd");
+	if (!suffixOutAdd) {
+		suffixOutAdd = "";
 	}
+	suffixInRemove = parser.get("SuffixInRemove");
 
 	// replace \\n by \n, \\r by \r...
-	var temp = {suff: suffix};
+	var temp = {suffixOutAwait: suffixOutAwait,
+				suffixOutAdd: suffixOutAdd,
+				suffixInRemove: suffixInRemove};
 	temp = JSON.stringify(temp);
 	temp = temp.replaceAll('\\\\', '\\');
 	temp = JSON.parse(temp);
-	suffix = temp.suff;
+	suffixOutAwait = temp.suffixOutAwait;
+	suffixOutAdd = temp.suffixOutAdd;
+	suffixInRemove = temp.suffixInRemove;
 
 	encoding = parser.get("Encoding");
 	if (!encoding) {
@@ -237,3 +260,10 @@ function initWsServer() {
 	});
 }
 initWsServer();
+/*SerialPort.list().then(function(ports){
+	ports.forEach(function(port){
+	  console.log("Port: ", port);
+	})
+  });
+*/
+  

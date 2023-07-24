@@ -7,7 +7,7 @@ var deviceID = device.deviceID;
 
 
 var webSockets = {
-    values: [8200, 8201, 8203, 8204, 8205, 8206, 8207],
+    values: [8200, 8201, 8208, 8204, 8205, 8206, 8207],
     usedSoFar: 0,
 };
 var usedSockets = new Set();

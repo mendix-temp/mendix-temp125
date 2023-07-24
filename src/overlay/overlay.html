@@ -106,10 +106,16 @@ button {
   align-content: center;
   flex-wrap: wrap;
 }
-.test-header {
+.page-header {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.page-body {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .important-test {
   width: max-content;
@@ -217,11 +223,25 @@ body {
 .test-content {
   margin-top: 10px;
 }
-.test-title {
+.page-title {
   margin-top: 10px;
   border: none;
   font-size: 24px;
   font-weight: 350;
+}
+.logo {
+  width: 38px;
+}
+.logo-padding {
+  position: absolute;
+  left: calc(50% - min(calc(100% - 80px), 900px) / 2 - 20px);
+  top: 17px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
 }
 
 /* Google icons settings */
@@ -241,55 +261,38 @@ body {
 </head>
 <div id="menu" class="page">
   <body id="body" style="background-color: #f8f8f8;">
-    <div class="settings-content">
-      <div id="app-list-buttons">
-        <div class="settings-title">Application List</div>
+    <div class="page-body">
+      <div class="page-header">
+        <div id="logo-back" class=logo-padding><img class="logo" src="../../icons/MXP-DarkBlue-Nurture.ico"></div>
+        <div class="settings-title page-title">Settings</div>
       </div>
-    </div>
-    <div class="settings-content">
-      <div class="settings-title">Diagnostic</div>
-      <button id="Device_List" class="menuItem diagnostic">
-        <span class="material-symbols-outlined menuIcon">list</span>
-        <div class="menuText">Device List</div>
-      </button>
-      <button id="Refresh_Config" class="menuItem diagnostic">
-        <span class="material-symbols-outlined menuIcon">sync</span>
-        <div class="menuText">Refresh Config</div>
-      </button>
+      <div class="settings-content">
+        <div id="app-list-buttons">
+          <div class="settings-title">Application List</div>
+        </div>
+      </div>
+      <div class="settings-content">
+        <div class="settings-title">Diagnostic</div>
+        <button id="Device_List" class="menuItem diagnostic">
+          <span class="material-symbols-outlined menuIcon">list</span>
+          <div class="menuText">Device List</div>
+        </button>
+        <button id="Refresh_Config" class="menuItem diagnostic">
+          <span class="material-symbols-outlined menuIcon">sync</span>
+          <div class="menuText">Refresh Config</div>
+        </button>
+      </div>
     </div>
   </body>
 </div>
 <div id="test" class="page" style="display: none;">
-  <div class="test-header">
+  <div class="page-header">
     <button class="overlay-button" id="backFromTestMenu"><span class="material-symbols-outlined">arrow_back</span></button>
-    <div class="settings-title test-title">Device List</div>
+    <div class="settings-title page-title">Device List</div>
   </div>
 
   <div class="settings-content test-content" id="device-list">
       
   </div>
 </div>
-<!--div id="settings" style="display: none;">
-  <div id="settings-header">
-    <img id="settings-icon" class="menuIcon" src="./mendix-256.png">
-    <div id="settings-title">Settings</div>
-  </div>
-  <div id="settings-body">
-    <button id="backFromSettings">
-      <span class="material-symbols-outlined">arrow_back</span>
-    </button>
-    <div class="settings-content">
-      <div class="content-description">
-        <div class="description-title">This is a title</div>
-        <div class="description-content">This is the content. It is super long on purpose to be representative of a normal description of the settings. I am now going to write some useless stuff. Useless stuff. <br>
-          This is on a new line, such a nice line. 
-        </div>
-      </div>
-      <div class="content-options">
-        <label for="stationMgt-input">Station Management URL</label><input type="text" id="stationMgt-input" value="https://stations100-sandbox.mxapps.io/">
-      </div>
-    </div>
-  </div>
-  <div id="settings-footer"></div>
-</div-->
 <script src="./overlay.js"></script>

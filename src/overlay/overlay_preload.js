@@ -19,4 +19,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   clear_overlay: (callback) => ipcRenderer.on('clear_overlay', callback),
   update_WS_buttons: (WSPort, enabled) => ipcRenderer.on('update_WS_buttons', WSPort, enabled),
   device_availability_changed: (WSPort, deviceAvailable) => ipcRenderer.on('availability_changed', WSPort, deviceAvailable),
-})
+  close_overlay: (windowID) => ipcRenderer.send('close_overlay', windowID),
+});

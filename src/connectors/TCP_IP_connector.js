@@ -8,7 +8,9 @@ var net = require('net'),
 
 	webServer, wsServer,
 	wsPort, tcpHost, tcpPort, deviceID, tcpClient, deviceName,
-	suffix, encoding, argv = null;
+	encoding, argv = null;
+
+var suffixOutAwait, suffixOutAdd, suffixInRemove = null;
 
 let currentWSClient = null;
 let broadcast =  null;
@@ -77,9 +79,9 @@ var new_client = function(webSocketClient, req)  {
 		// Receive data from TCP client and send to WebSocket client
 		tcpClient.on('data', function (data) {
 			try {
-				if (suffix) {
+				if (suffixInRemove) {
 					buffer += data.toString();
-					var lines = buffer.split(suffix);
+					var lines = buffer.split(suffixInRemove);
 					while (lines.length > 1) {
 						msg = lines.shift();
 						console.log('TCP to WebSocket message: ' + data.toString() + ' on port: ' + wsPort);
@@ -92,7 +94,7 @@ var new_client = function(webSocketClient, req)  {
 							});
 						}
 					}
-					buffer = lines.join(suffix);
+					buffer = lines.join(suffixInRemove);
 				}
 				else {
 					console.log('TCP to WebSocket message: ' + data.toString() + ' on port: ' + wsPort);
@@ -132,12 +134,26 @@ var new_client = function(webSocketClient, req)  {
 		});
 	}
 	
+	let bufferOut = "";
 	// Receive data from WebSocket client and send to TCP client
-	webSocketClient.on('message', function(msg) {
-		console.log('WebSocket to TCP message: ' + msg);
+	webSocketClient.on('message', function(data) {
+		if (suffixOutAwait) {
+			bufferOut += data;
+			let lines = bufferOut.split(suffixOutAwait);
+			while (lines.length > 1) {
+				let msg = lines.shift();
+				console.log('WebSocket to TCP message: ' + msg + ' on ' + tcpHost + ':' + tcpPort);
+				tcpClient.write(msg + suffixOutAdd, encoding);
+			}
+			bufferOut = lines.join(suffixOutAwait);
+		}
+		// send raw data
+		else {
+			console.log('WebSocket to TCP message: ' + data + ' on ' + tcpHost + ':' + tcpPort);
 
-		// Send data to TCP/IP device along with suffix if specified
-		tcpClient.write(msg + suffix, encoding);
+			// Send data to TCP/IP device along with suffix if specified
+			tcpClient.write(data + suffixOutAdd, encoding);
+		}
 	});
 	webSocketClient.on('close', function (code, reason) {
 		console.log('WebSocket client disconnected: ' + code + ' [' + reason + ']');
@@ -177,17 +193,23 @@ function initWsServer() {
 		broadcast = parser.get("broadcast");
 	}
 
-	suffix = parser.get("Suffix");
-	if (!suffix) {
-		suffix = "";
+	suffixOutAwait = parser.get("SuffixOutAwait");
+	suffixOutAdd = parser.get("SuffixOutAdd");
+	if (!suffixOutAdd) {
+		suffixOutAdd = "";
 	}
+	suffixInRemove = parser.get("SuffixInRemove");
 
-	// replace \\n by \n, \\r by \r, ...
-	var temp = {suff: suffix};
+	// replace \\n by \n, \\r by \r...
+	var temp = {suffixOutAwait: suffixOutAwait,
+				suffixOutAdd: suffixOutAdd,
+				suffixInRemove: suffixInRemove};
 	temp = JSON.stringify(temp);
 	temp = temp.replaceAll('\\\\', '\\');
 	temp = JSON.parse(temp);
-	suffix = temp.suff;
+	suffixOutAwait = temp.suffixOutAwait;
+	suffixOutAdd = temp.suffixOutAdd;
+	suffixInRemove = temp.suffixInRemove;
 
 	encoding = parser.get("Encoding");
 	if (!encoding) {

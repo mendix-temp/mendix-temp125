@@ -79,8 +79,17 @@ webServer.listen(process.argv[2], function() {
 				}));
             }
             else {
-                console.log("Received: " + data);
-                console.log("Not sending data to web App.");
+                try {
+					let header = JSON.parse(data).header
+					if (header == "refresh_config") {
+						process.parentPort.postMessage({
+							header: "refresh_config"
+						});
+					}
+				} catch (error) {
+					console.log("Received: " + data);
+					console.log("Not sending data to web App.");
+				}
             }
         });
 		// TODO: error handling

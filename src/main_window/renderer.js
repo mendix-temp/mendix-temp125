@@ -98,7 +98,7 @@ function addMenuItem(name, url_app) {
             '<span id="' + name + '_open_status" class="material-symbols-outlined"></span>' + 
         '</button>' +
         '<button id="' + name + '_closed" class="menuItemClosed" onclick="javascript:openApp(this.dataset.name, this.dataset.url)" data-name="' + name + '" data-url="' + url_app + '">' + 
-            '<img class="menuIcon" src="' + url_app +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
+            '<img class="menuIconClosed" src="' + url_app +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
             '<span id="' + name + '_closed_status" class="material-symbols-outlined"></span>' +
         '</button>';
     }
@@ -231,5 +231,3 @@ document.getElementById('goForward').addEventListener('click', function() {
 document.getElementById('toggle_dev_tools').addEventListener('click', function() {
     window.electronAPI.toggle_dev_tools(windowID);
 });
-
-console.log('Mendix4Ever');

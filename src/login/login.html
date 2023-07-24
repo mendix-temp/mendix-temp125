@@ -5,7 +5,12 @@
   padding: 20px;
   background-color: rgb(255, 123, 0);
   color: black;
-  margin-bottom: 15px;
+  position: fixed;
+  width: calc(100% - 80px);
+  top: 0;
+  left: 0;
+  margin: 20px;
+  border-radius: 7px;
 }
 
 /* The close button */
@@ -21,30 +26,79 @@
 
 .center {
   margin: auto;
-  margin-top: 35px;
-  width: 33.33%;
+  font-family: Arial, sans-serif;
+  margin-top: 100px;
+  width: min(600px, 66.67%);
   background-color: white;
-  height: 50%;
+  border-radius: 7px;
+  border: 1px solid lightgrey;
 }
 
 input {
   max-width: 100%;
   width: 100%;
   box-sizing: border-box;
+  height: 30px;
+  border-radius: 15px;
+  border: 2px solid lightgrey;
+  padding: 0 10px 0 10px;
+  margin-top: 12px;
+}
+label {
+  cursor: text;
 }
 
 .appLogo {
   max-width: 80%;
-  padding: 20px 20px;
-  padding-bottom: 5px;
-  margin-top: 6px;
+  padding-bottom: 0;
+  height: 48px;
+  border: 1px solid #e5e5e5;
+  border-radius: 11px;
+  margin-right: 20px;
+}
+.appName {
+  font-size: 32px;
+  font-weight: 600;
 }
 .submitForm {
   padding: 20px 20px 30px 20px;
 }
+.submitButton {
+  background-color: #f8f8f8;
+  cursor: pointer;
+  transition: 250ms;
+}
+.submitButton:hover {
+  background-color: #e5e5e5;
+}
+.submitButton:active {
+  background-color: #00000059;
+}
 .logoPlaceholder {
-  text-align: center;
-  width: 100%;
+  display: flex;
+  width: calc(100% - 40px);
+  align-items: center;
+  border-bottom: 1px solid lightgrey;
+  margin: 20px 20px 0 20px;
+  padding-bottom: 20px;
+}
+.manualConfig {
+  position: fixed;
+  bottom: 16px;
+  left: 16px;
+  height: 50px;
+  width: 50px;
+  border-radius: 17px;
+  border: #c6c6c6 2px solid;
+  background-color: white;
+  cursor: pointer;
+  font-size: 11px;
+}
+.manualConfig:hover {
+  background-color: #eeeeee;
+}
+.manualConfig:active {
+  background-color: #e5e5e5;
 }
 
 </style>
@@ -52,25 +106,23 @@ input {
   <meta charset="UTF-8">
   <title>Login</title>
 </head>
-<body style="background-color: rgb(222, 222, 222);">
+<body style="background-color: #f8f8f8;">
   <div class="alert" id="alert" style="visibility: hidden;">
     <span class="alert_text" id="alert_text">Invalid URL.</span>
     <span class="closebtn" onclick="this.parentElement.style.visibility='hidden';">&times;</span>
   </div>
   <div class="center">
     <div class="logoPlaceholder">
-      <img class="appLogo" src="mendix.png">
+      <img class="appLogo" src="../../icons/MXP-DarkBlue-Nurture.ico">
+      <div class="appName">Mendix Player</div>
     </div>
     <form class="submitForm" id="submitForm" action="javascript:submitForm()">
-      <label for="username">Username:</label><br>
-      <input type="text" id="username"><br>
-      <label for="password">Password:</label><br>
-      <input type="password" id="password"><br>
-      <label for="webService">Web Service:</label><br>
-      <input type="text" id="webService" required><br><br>
-      <input type="submit" value="Submit">
+      <label for="webService">Station Management URL</label>
+      <input value="stations100-sandbox.mxapps.io" type="text" id="webService" required>
+      <input type="submit" value="Retrieve configuration" class="submitButton">
     </form>
   </div>
+  <button class="manualConfig">Manual Config</button>
     
     <script src="./login.js"></script>
 </body>

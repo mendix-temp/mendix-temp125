@@ -5,8 +5,10 @@ const WebSocket = require('ws').WebSocket;
 const os = require('os');
 
 let mainWindow,
-  overlay,
-  config;
+    isQuiting,
+    overlay,
+    config,
+    tray;
 
 // pointer to process handling websocket connection to station
 let deviceListProcess = null;
@@ -27,6 +29,8 @@ class WindowClass {
   constructor(someWindow, someOverlay) {
     this.window = someWindow;
     this.overlay = someOverlay;
+
+    // map of app name to view
     this.views = new Map();
     this.sideMenuOpen = true;
     this.menuOpenable = true;
@@ -86,8 +90,35 @@ electron.app.whenReady().then(() => {
   IDToWindowClass.set(mainWindow.id, new WindowClass(mainWindow, overlay));
   createListeners(mainWindow, overlay, true);
 
+  // handle tray creation
+  tray = new electron.Tray(electron.nativeImage.createFromPath('./src/overlay/mendix-256.png'))
+  tray.setContextMenu(electron.Menu.buildFromTemplate([
+    {
+      label: 'Show App', click: function () {
+        if (IDToWindowClass.size == 1) {
+          IDToWindowClass.forEach((WindowClassObj, windowID) => {
+            WindowClassObj.window.show();
+          });
+        }
+      }
+    },
+    {
+      label: 'Quit', click: function () {
+        isQuiting = true;
+        electron.app.quit();
+      }
+    }
+  ]));
+  tray.on('click', (event) => {
+    if (IDToWindowClass.size == 1) {
+      IDToWindowClass.forEach((WindowClassObj, windowID) => {
+        WindowClassObj.window.show();
+      });
+    }
+  });
+
   // Hide default window menu
-  electron.Menu.setApplicationMenu(null);
+  // electron.Menu.setApplicationMenu(null);
 });
 
 
@@ -99,8 +130,8 @@ function getBoundsView(window) {
   var currentBounds = window.getContentBounds();
   currentBounds['x'] = IDToWindowClass.get(window.id).sideMenuOpen ? Math.ceil(0.1667 * currentBounds['width']) + 1 : 51;
   currentBounds['width'] = currentBounds['width'] - currentBounds['x'];
-  currentBounds['height'] = currentBounds['height'] - 30;
-  currentBounds['y'] = 30;
+  currentBounds['height'] = currentBounds['height'] - 31;
+  currentBounds['y'] = 31;
   return currentBounds;
 }
 
@@ -146,6 +177,50 @@ function deviceDisconnected(deviceID) {
   IDToWindowClass.forEach((windowObj, windowID) => {
     windowObj.overlay.webContents.send('availability_changed', WSPort, 'false');
   });
+}
+
+// Refresh config when button is pressed in settings or when Station Management app sends
+// message with "refresh_config" header
+function refreshConfig() {
+  IDToWindowClass.forEach((windowClass, windowID) => {
+    // Set all browser views of all windows to null
+    windowClass.window.setBrowserView(null);
+    windowClass.window.currentView = null;
+
+    // Close all open apps
+    for (const appName of windowClass.views.keys()) {
+      windowClass.views.get(appName).webContents.destroy();
+      windowClass.window.webContents.send('close_app', appName);
+    }
+    windowClass.views.clear();
+    windowClass.window.webContents.send('refresh_config');
+    windowClass.overlay.webContents.send('clear_overlay');
+  }); 
+
+  // kill all connector processes
+  for (const processID of PIDToProcess.keys()) {
+    PIDToProcess.get(processID).kill()
+  }
+
+  // close all open webSockets
+  WSPortToWS.forEach((WS, WSPort) => {
+    WS.close();
+  }); 
+  WSPortToDevice.clear();
+  WSPortToWS.clear();
+  PIDToProcess.clear();
+
+  login = new electron.BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, '/login/preload.js')
+    }, 
+    //closable: false,
+    parent: mainWindow, 
+    modal: true,
+    show: false 
+  });
+  login.loadFile('src/login/login.html');
+  decideJSON();
 }
 
 /*##################################################################################/*
@@ -307,46 +382,7 @@ electron.ipcMain.on('close_WS', (event, WSPort) => {
 // Close everything and get new config from API/file
 // (config.json modified manually will get overwritten by API config)
 electron.ipcMain.on('refresh_config', (event) => {
-  
-  IDToWindowClass.forEach((windowClass, windowID) => {
-    // Set all browser views of all windows to null
-    windowClass.window.setBrowserView(null);
-    windowClass.window.currentView = null;
-
-    // Close all open apps
-    for (const appName of windowClass.views.keys()) {
-      windowClass.views.get(appName).webContents.destroy();
-      windowClass.window.webContents.send('close_app', appName);
-    }
-    windowClass.views.clear();
-    windowClass.window.webContents.send('refresh_config');
-    windowClass.overlay.webContents.send('clear_overlay');
-  }); 
-
-  // kill all connector processes
-  for (const processID of PIDToProcess.keys()) {
-    PIDToProcess.get(processID).kill()
-  }
-
-  // close all open webSockets
-  WSPortToWS.forEach((WS, WSPort) => {
-    WS.close();
-  }); 
-  WSPortToDevice.clear();
-  WSPortToWS.clear();
-  PIDToProcess.clear();
-
-  login = new electron.BrowserWindow({
-    webPreferences: {
-      preload: path.join(__dirname, '/login/preload.js')
-    }, 
-    //closable: false,
-    parent: mainWindow, 
-    modal: true,
-    show: false 
-  });
-  login.loadFile('src/login/login.html');
-  decideJSON();
+  refreshConfig();
 });
 
 // Create new browser window when button is pressed
@@ -377,6 +413,12 @@ electron.ipcMain.on('new_window', (event) => {
   
   IDToWindowClass.set(newWindow.id, new WindowClass(newWindow, newOverlay));
   createListeners(newWindow, newOverlay, false);
+});
+
+// Close overlay when logo is clicked
+electron.ipcMain.on('close_overlay', (event, windowID) => {
+  IDToWindowClass.get(windowID).overlay.hide();
+  IDToWindowClass.get(windowID).window.focus();
 });
 /*--------------------------------WEB FUNCTIONALITY---------------------------------*/
 // Reload current view
@@ -419,13 +461,8 @@ electron.ipcMain.on('toggle_dev_tools', (event, windowID) => {
 ---------------------------------------EVENTS---------------------------------------
 /*##################################################################################*/
 function createListeners(someWindow, someOverlay, isFirstWindow) {
-  // Quit app when all windows are closed
-  electron.app.on('window-all-closed', function () {
-    electron.app.quit();
-  });
-
   // Resize html body so that it fits perfectly, regardless of screen resolution
-  someWindow.on('ready-to-show', (event) => {
+  someWindow.once('ready-to-show', (event) => {
     someWindow.webContents.send('resize_body', someWindow.getContentBounds()['height']);
     someWindow.maximize();
     someWindow.show();
@@ -435,8 +472,24 @@ function createListeners(someWindow, someOverlay, isFirstWindow) {
   someWindow.on('resize', (event) => {
     setBoundsViews(someWindow);
   });
+  
   someWindow.on('maximize', (event) => {
     setBoundsViews(someWindow);
+  });
+
+  someWindow.on('close', (event) => {
+    // if close event and only 1 window remaining and not closed from systray:
+    // hide window
+    if (!isQuiting && IDToWindowClass.size == 1) {
+      event.preventDefault();
+      IDToWindowClass.forEach((WindowClassObj, windowID) => {
+        WindowClassObj.window.hide();
+      });
+    }
+    // otherwise, close window
+    else {
+      IDToWindowClass.delete(someWindow.id);
+    }
   });
 
   // Overload close button on overlay window so that it hides it 
@@ -473,13 +526,23 @@ function createListeners(someWindow, someOverlay, isFirstWindow) {
   });
 }
 
+// Prevent bug with autoupdate
+electron.app.on('before-quit', function() {
+  isQuiting = true;
+});
+// Quit app when all windows are closed
+electron.app.on('window-all-closed', function () {
+  electron.app.quit();
+});
+
 /*##################################################################################/*
-----------------------------------------JSON----------------------------------------
+-------------------------------------GET CONFIG-------------------------------------
 /*##################################################################################*/
+let userDataPath = electron.app.getPath('userData');
 function decideJSON() {
-  if (fs.existsSync("./config.json")) {
+  if (fs.existsSync(userDataPath + "/config.json")) {
     try {
-      config = fs.readFileSync("./config.json")
+      config = fs.readFileSync(userDataPath + "/config.json")
       config = JSON.parse(config)
       handleJSON(config, true);
     } catch (error) {
@@ -495,9 +558,7 @@ function decideJSON() {
 function handleJSON (config, configExists) {
   // Get JSON from MX Station and updates local file
   // Call overlay and send updated apps list to display
-  fetch(config.url_station, {headers: {
-    hostName: os.hostname()
-  }})
+  fetch(config.url_station)
     .then(response => {
       if (!response.ok) {
         console.log("Denied access by server");
@@ -506,10 +567,24 @@ function handleJSON (config, configExists) {
       return response.json()
     })
     .then(json => {
+      // Onboarding
+      if (json["result"] == "UnknownStation") {
+        config["onboarding_url"] = json["onboarding_url"];
+        let onboardingView = new electron.BrowserView();
+        IDToWindowClass.get(mainWindow.id).views.set("onboarding", onboardingView);
+        IDToWindowClass.get(mainWindow.id).currentView = "onboarding";
+        IDToWindowClass.get(mainWindow.id).window.setBrowserView(onboardingView);
+        onboardingView.setBounds(getBoundsView(IDToWindowClass.get(mainWindow.id).window));
+        onboardingView.webContents.loadURL(config["onboarding_url"]);
+        login.hide();
+        return;
+      }
+      // Normal configuration process
+      config["onboarding_url"] = json["onboarding_url"];
       config["apps"] = json["apps"];
       config["devices"] = json["devices"];
       config["station_name"] = json["station_name"];
-      fs.writeFile("config.json", JSON.stringify(config, null, 2), function(err) {
+      fs.writeFile(userDataPath + "/config.json", JSON.stringify(config, null, 2), function(err) {
         if (err) {
           console.log(err)
           // TODO: add script to handle write error
@@ -619,7 +694,10 @@ function portInUse(device, deviceID) {
 function IPC(child) {
   child.on('message', (data) => {
     if (data.header == 'error') {
-      PIDToProcess.get(parseInt(data.deviceID)).kill();
+      try {
+        PIDToProcess.get(parseInt(data.deviceID)).kill();
+      } catch (error) {
+      }
       PIDToProcess.delete(parseInt(data.deviceID));
       response = electron.dialog.showMessageBoxSync(mainWindow, {
         message: 'An error occured during connection to device ' +
@@ -668,6 +746,13 @@ function startWebAppCommProcess() {
   });
   deviceListProcess = electron.utilityProcess.fork(path.join(__dirname, '/device_to_webApp.js'), 
   ['8094', config["station_name"]]);
+
+  // receive messages from deviceListProcess
+  deviceListProcess.on('message', (data) => {
+    if (data.header == 'refresh_config') {
+      refreshConfig();
+    }
+  });
 }
 
 // Send error message to Web App
