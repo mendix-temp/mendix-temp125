@@ -18,11 +18,13 @@ function openApp(button) {
 // [{"name": ..., "url": ...}, {"name": ..., "url": ...}, ...]
 function createMenu(data) {
     // Generate buttons in overlay
+    let menuWrapper = document.getElementById("app-list-buttons");
     for (i = 0; i < data.length; i++) {
-        document.getElementById("app-list-buttons").innerHTML += 
+        let faviconUrl = 'http://' + new URL(data[i].url).hostname + '/favicon.ico';
+        menuWrapper.innerHTML += 
         '<div class="buttons">' +
             '<button class="menuItem" onclick="openApp(this)" id=' + data[i].name + ' data-url="' + data[i].url + '">' +
-                '<img class="menuIcon" src="' + data[i].url +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
+                '<img class="menuIcon" src="' + faviconUrl +'" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
                 '<div class="menuText">' + data[i].name + '</div>' + 
             '</button>' +
             '<div><button id="' + data[i].name + '_closeButton' + '" class="overlay-button" onclick="closeApp(this.dataset.name)" data-name="' + data[i].name + '" style="display:none;">' +
@@ -32,6 +34,12 @@ function createMenu(data) {
             '</button></div>' +
         '</div>';
     }
+    menuWrapper.innerHTML += '<div class="buttons">' + 
+        '<button class="menuItem diagnostic" onclick="">' + 
+            '<span class="material-symbols-outlined menuIcon">settings_account_box</span>' + 
+            '<div class="menuText">Manage station devices and apps</div>' + 
+        '</button>' +  
+    '</div>'
 }
 
 // Create list of devices in Device List of Settings

@@ -18,7 +18,7 @@ function openOverlay() {
 function toggleSideMenu(open) {
     if (open) {
         // Change add app and minimize buttons by full name
-        document.getElementById('minimizeButton').innerHTML = '<span class="material-symbols-outlined">menu</span>' +
+        document.getElementById('minimizeButton').innerHTML = '<span class="material-symbols-outlined">apps</span>' +
                                                               '<div>Minimize</div>';
         document.getElementById('settingsButton').innerHTML = '<span class="material-symbols-outlined">settings</span>' +
                                                               '<div>Settings</div>';
@@ -41,7 +41,7 @@ function toggleSideMenu(open) {
         // Change add app and minimize buttons by icons
         document.getElementById('minimizeButton').innerHTML = 
         '<span class="material-symbols-outlined">' +
-            'menu' +
+            'apps' +
         '</span>';
         document.getElementById('settingsButton').innerHTML = 
         '<span class="material-symbols-outlined">' +
@@ -78,27 +78,28 @@ function switchApp(appName) {
 
 // Add buttons in left menu
 function addMenuItem(name, url_app) {
+    let faviconUrl = 'http://' + new URL(url_app).hostname + '/favicon.ico';
     if (sideMenuOpen && menuOpenable) {
         document.getElementById('menuElts').innerHTML += 
         '<button class="menuItemOpen" id="' + name + '_open" class="menuItemOpen" onclick="javascript:openApp(this.dataset.name, this.dataset.url)" data-name="' + name + '" data-url="' + url_app + '">' + 
-            '<img class="menuIcon" src="' + url_app +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
+            '<img class="menuIcon" src="' + faviconUrl + '"onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
             '<div class="menuText">' + name + '</div>' + 
             '<span id="' + name + '_open_status" class="material-symbols-outlined"></span>' +
         '</button>' +
         '<button class="menuItemClosed" id="' + name + '_closed" onclick="javascript:openApp(this.dataset.name, this.dataset.url)" data-name="' + name + '" data-url="' + url_app + '" style="display:none">' + 
-            '<img class="menuIconClosed" src="' + url_app +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
+            '<img class="menuIconClosed" src="' + faviconUrl +'" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
             '<span id="' + name + '_closed_status" class="material-symbols-outlined"></span>' +
         '</button>';
     }
     else {
         document.getElementById('menuElts').innerHTML += 
         '<button class="menuItemOpen" onclick="javascript:openApp(this.dataset.name, this.dataset.url)" data-name="' + name + '" data-url="' + url_app + '" class="open" style="display:none"; id="' + name + "_open" + '">' + 
-            '<img class="menuIcon" src="' + url_app +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
+            '<img class="menuIcon" src="' + faviconUrl +'" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
             '<div class="menuText">' + name + '</div>' + 
             '<span id="' + name + '_open_status" class="material-symbols-outlined"></span>' + 
         '</button>' +
         '<button id="' + name + '_closed" class="menuItemClosed" onclick="javascript:openApp(this.dataset.name, this.dataset.url)" data-name="' + name + '" data-url="' + url_app + '">' + 
-            '<img class="menuIconClosed" src="' + url_app +'/favicon.ico" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
+            '<img class="menuIconClosed" src="' + faviconUrl +'" onerror="this.onerror=null; this.src=' + "'./question_mark.svg'" + '">' +
             '<span id="' + name + '_closed_status" class="material-symbols-outlined"></span>' +
         '</button>';
     }

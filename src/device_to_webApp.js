@@ -51,6 +51,7 @@ let wsServer;
 let webServer = http.createServer(http_request);
 
 let devices = [];
+let stationName = 'unknown';
 
 wsServer = new WebSocketServer({
 	server: webServer,
@@ -75,7 +76,7 @@ webServer.listen(process.argv[2], function() {
 					header: "devices",
 					devices: devices,
 					computerName: os.hostname(),
-					stationName: process.argv[3]
+					stationName: stationName
 				}));
             }
             else {
@@ -84,6 +85,12 @@ webServer.listen(process.argv[2], function() {
 					if (header == "refresh_config") {
 						process.parentPort.postMessage({
 							header: "refresh_config"
+						});
+					}
+					else if (header == "APIKey") {
+						process.parentPort.postMessage({
+							header: "APIKey",
+							APIKey: JSON.parse(data).APIKey,
 						});
 					}
 				} catch (error) {
@@ -112,6 +119,7 @@ process.parentPort.on('message', (message) => {
 	if (message.data.header === 'deviceListUpdate') {
 		console.log("Updated device list locally.");
 		devices = JSON.parse(message.data.deviceList);
+		stationName = message.data.stationName;
 		return;
 	}
 	else if (message.data.header === 'error') {

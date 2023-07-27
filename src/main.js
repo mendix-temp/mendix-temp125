@@ -566,15 +566,26 @@ function decideJSON() {
 }
 
 function handleJSON (config, configExists) {
+  let APIKey;
+  // Check if API Key is saved locally
+  if (fs.existsSync(userDataPath + "/APIKey.txt")) {
+    APIKey = fs.readFileSync(userDataPath + "/APIKey.txt");
+  }
+  else {
+    APIKey = 'undefined';
+  }
+
   // Get JSON from MX Station and updates local file
   // Call overlay and send updated apps list to display
-  fetch(config.url_station)
+  fetch(config.url_station, {
+      headers: {'APIKey': APIKey}
+    },
+    )
     .then(response => {
       if (!response.ok) {
-        console.log("Denied access by server");
         throw new Error('Denied access by server');
       }
-      return response.json()
+      return response.json();
     })
     .then(json => {
       // Onboarding
@@ -585,6 +596,11 @@ function handleJSON (config, configExists) {
         IDToWindowClass.get(mainWindow.id).currentView = "onboarding";
         IDToWindowClass.get(mainWindow.id).window.setBrowserView(onboardingView);
         onboardingView.setBounds(getBoundsView(IDToWindowClass.get(mainWindow.id).window));
+
+        if (!deviceListProcess) {
+          startWebAppCommProcess(json["config_port"]);
+        }
+
         onboardingView.webContents.loadURL(config["onboarding_url"]);
         login.hide();
         return;
@@ -594,6 +610,7 @@ function handleJSON (config, configExists) {
       config["apps"] = json["apps"];
       config["devices"] = json["devices"];
       config["station_name"] = json["station_name"];
+      config["config_port"] = json["config_port"];
       fs.writeFile(userDataPath + "/config.json", JSON.stringify(config, null, 2), function(err) {
         if (err) {
           console.log(err)
@@ -610,6 +627,7 @@ function handleJSON (config, configExists) {
     })
     .catch((err) => {
       console.log("Error fetching data from server.");
+      console.log(err.message);
       if (configExists) {
         console.log("Using previous config from file.");
         IDToWindowClass.forEach((windowObj, windowID) => {
@@ -664,13 +682,14 @@ function handleDevices(config) {
   var deviceList = new Array();
   WSPortToDevice.forEach(function(device, port) {
     deviceList.push(device);
+    device['websocket_port'] = port;
   });
   IDToWindowClass.forEach((windowObj, windowID) => {
     windowObj.overlay.send('devices_handled');
     windowObj.overlay.webContents.send('device_list', deviceList);
   });
   if (!deviceListProcess) {
-    startWebAppCommProcess();
+    startWebAppCommProcess(config['config_port']);
   }
   sendUpdateDeviceList(config['devices']);
 }
@@ -749,18 +768,19 @@ function IPC(child) {
 /*###################################################################################/*
 ---------------------------------WEBAPP COMMUNICATION--------------------------------
 /*###################################################################################*/
-// TODO: get ws port from station and use it to start device process
-function startWebAppCommProcess() {
-  WSPortToDevice.forEach(function(device, port) {
-    device['websocket_port'] = port;
-  });
+function startWebAppCommProcess(WSPort) {
+  WSPort = '8094';
   deviceListProcess = electron.utilityProcess.fork(path.join(__dirname, '/device_to_webApp.js'), 
-  ['8094', config["station_name"]]);
+  [WSPort]);
 
   // receive messages from deviceListProcess
   deviceListProcess.on('message', (data) => {
     if (data.header == 'refresh_config') {
       refreshConfig();
+    }
+    else if (data.header == 'APIKey') {
+      fs.writeFileSync(userDataPath + '/APIKey.txt', data.APIKey);
+      handleJSON(config, false);
     }
   });
 }
@@ -792,7 +812,8 @@ function sendUpdateAvailableStatus(deviceName, deviceAvailable, deviceID, WSPort
 function sendUpdateDeviceList(devices) {
   deviceListProcess.postMessage({
     header: 'deviceListUpdate',
-    deviceList: JSON.stringify(devices)
+    deviceList: JSON.stringify(devices),
+    stationName: config['station_name'],
   });
 }
 
