@@ -1,5 +1,11 @@
 # Mendix Player
 
+## Pipeline
+How to run and debug ?
+How to compile ?
+How to deploy for auto update ?
+How to change version number ?
+
 ## Architecture
 
 ### High-level architecture
@@ -183,3 +189,4 @@ Every large file is separated into logical parts separated by large headers. Suc
 - lines   7 -> 106: Define functions that will be used later in the program
 - lines 107 -> 197: Send and receive messages to/from main process and perform necessary actions depending on message
 - lines 198 -> end: React to 'click' events
+
