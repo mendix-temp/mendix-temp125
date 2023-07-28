@@ -12,6 +12,7 @@ Then start the program:
 ### How to debug
 
 Open the directory in VS Code and use the default node.js debugger using Run script: Start configuration:  
+
 ![image](https://github.com/mendix-temp/mendix-temp125/assets/133011381/cd8b300a-bdde-4f03-aa81-6d18cd99d106)  
 
 ### How to make an executable
