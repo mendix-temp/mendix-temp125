@@ -33,6 +33,24 @@ Make sure that all files are committed and pushed to the github repository
 `git commit`: commit the files
 `git push`: push the commited files to github repository  
 
+Then, you need to go to log in the github repo and follow the following steps to set the last publish as the latest release (the one used by the autoupdate)  
+
+<details>
+  <summary><b>Steps</b></summary>
+  <br>
+   1.  
+ 
+   ![Screenshot 2023-07-28 104513](https://github.com/mendix-temp/mendix-temp125/assets/133011381/11dd3380-3108-4f4e-8108-2af93dde4393)  
+
+   2. 
+   ![Screenshot 2023-07-28 104828](https://github.com/mendix-temp/mendix-temp125/assets/133011381/f100f8ce-6c18-48d3-bba3-79423be067f7)  
+
+   3.
+   ![Screenshot 2023-07-28 104931](https://github.com/mendix-temp/mendix-temp125/assets/133011381/a6f820a7-63f7-4485-ad03-378e98b660c3)  
+</details>
+
+
+
 ### How to update version number
 
 Change the "version" fields in package.json and package-lock.json to the correct number
@@ -106,6 +124,27 @@ The user is now ready to use the web browser to interact with his web applicatio
  accessed by clicking the "Settings" button in the bottom left of the window. The Settings window allows the user to close applications and to access some diagnostic tools. Such diagnstic tools include the option
 to send and receive messages to/from devices in the "Device List" section and the option to refresh the configuration of the station ("Refresh Config"). The latter will close all open processes, prompt the web
 service for a new configuration and restart the initialization process. 
+
+### Additional information about Suffix settings in Serial and TCP/IP drivers
+
+#### SuffixOutAwait
+
+If a value for SuffixOutAwait is specified, the Player is going to buffer all incoming data from the web app until it receives the string specified in the
+SuffixOutAwait field. Once received, all the buffer is sent directly to the device <b>without<b> the specified string.  
+
+If unspecified, the Player is going to relay all the incoming messages from the web app to the devices one by one as they arrive. 
+
+#### SuffixOutAdd
+
+If a value for SuffixOutAdd is specified (for example a CRLF), the Player is going to add that suffix to every message that it sends to the devices. 
+
+#### SuffixInRemove
+
+If a value for SuffixInRemove is specified, the Player is going to buffer all the incoming data from the device until it receives the specified string (for 
+example a CRLF). Once received, it is going to send the buffer to the web app <b>without<b> the specified suffix. 
+
+If unspecified, the player is going to relay all messages from the devices to the web app one by one as they arrive. This may mean that the messages will 
+arrive character by character to the web app. 
 
 ## Mendix Developer Experience
 
