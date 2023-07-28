@@ -1,10 +1,47 @@
 # Mendix Player
 
 ## Pipeline
-How to run and debug ?
-How to compile ?
-How to deploy for auto update ?
-How to change version number ?
+
+### How to run
+
+Move to the directory containing the source code (with the node dependencies found on onedrive):
+`cd ./.../.../mendix-temp125`
+Then start the program:
+`npm run start`
+
+### How to debug
+
+Open the directory in VS Code and use the default node.js debugger using Run script: Start configuration:  
+![image](https://github.com/mendix-temp/mendix-temp125/assets/133011381/cd8b300a-bdde-4f03-aa81-6d18cd99d106)  
+
+### How to make an executable
+
+Move to the directory containing the source code (with the node dependencies found on onedrive):  
+`cd ./.../.../mendix-temp125`  
+Then run the make command:  
+`npm run make`  
+
+The executable can bu found at: `./out/make/Mendix Player-<version> Setup.exe`
+
+### How to deploy for autoupdate
+
+Make sure that all files are committed and pushed to the github repository
+
+`git status`: show which files are going to be added to the commit  
+`git add <fileName>` or `git add <folderName>: add the chosen file/folder to the next commit  
+`git commit`: commit the files
+`git push`: push the commited files to github repository  
+
+### How to update version number
+
+Change the "version" fields in package.json and package-lock.json to the correct number
+
+### How to clone repository
+
+Run the following command in the working directory to be to download the files:  
+`git clone https://github.com/mendix-temp/mendix-temp125`  
+Note that for privacy and technical reasons, the public github do not contain all the files needed to compile the application.  
+The additional dependencies (forge.config.js and the node_modules folder) can be found in the shared onedrive. 
 
 ## Architecture
 
