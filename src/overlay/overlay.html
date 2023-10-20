@@ -255,6 +255,44 @@ body {
   'opsz' 40;
   color: rgb(110, 110, 110);
 }
+.preference-wrapper {
+  border-bottom: 1px solid gray;
+  display: flex;
+  align-items: center;
+  min-height: 50px;
+}
+.preference-wrapper > span {
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 100, 'opsz' 32;
+  color: black;
+  font-size: 32px;
+  padding-left: 6px;
+  padding-right: 20px;
+}
+.preference {
+  margin-top: 8px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 5px;
+  font-family: Arial;
+}
+label {
+  position: absolute;
+  right: 39px;
+}
+/* Select last preference */
+.preference:not(.preference > .preference) {
+    padding-bottom: 8px;
+}
+/* Select all but last preference */
+.preference > .preference {
+    margin-left: 32px;
+}
+
 </style>
 <head>
   <meta charset="UTF-8">
@@ -286,6 +324,36 @@ body {
             <span class="material-symbols-outlined menuIcon">sync</span>
             <div class="menuText">Refresh Config</div>
           </button>
+        </div>
+      </div>
+      <div class="settings-content">
+        <div class="settings-title">Preferences</div>
+        <div class="preference-wrapper">
+          <span class="material-symbols-outlined">speed</span>
+          <div class="preference">
+            <div>
+              Launch Workstation on login
+              <label class="switch">
+                <input type="checkbox">
+              </label>
+            </div>
+            <div class="preference">
+              <div>
+                Hide Workstation when launched on login
+                <label class="switch">
+                  <input type="checkbox">
+                </label>
+              </div>
+              <div class="preference">
+                <div>
+                  Recursion test
+                  <label class="switch">
+                    <input type="checkbox">
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

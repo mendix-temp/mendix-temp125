@@ -50,6 +50,21 @@ let WSPortToWS = new Map();
 /*##################################################################################/*
 ----------------------------------WINDOWS CREATION----------------------------------
 /*##################################################################################*/
+
+// Ask Electron API whether this is the first instance to be open or not
+const gotTheLock = electron.app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  electron.app.exit()
+}
+else {
+  electron.app.on('second-instance', (event, commandLine, workingDirectory, additionalData) => {
+    // Focus window if user tries to open a second instance
+    IDToWindowClass.forEach((windowClassObj, windowID) => {
+      windowClassObj.window.show();
+      windowClassObj.window.focus();
+    });
+  })
+}
 // Builds main window, overlay window, and login window
 electron.app.whenReady().then(() => {
   mainWindow = new electron.BrowserWindow({
@@ -124,7 +139,7 @@ electron.app.whenReady().then(() => {
   });
 
   // Hide default window menu
-  electron.Menu.setApplicationMenu(null);
+  //electron.Menu.setApplicationMenu(null);
 });
 
 
@@ -709,7 +724,7 @@ function retryConnection(device, deviceID) {
 }
 
 function portInUse(device, deviceID) {
-  electron.dialog.showMessageBoxSync(mainWindow, {
+  electron.dialog.showMessageBox({
     message: 'An error occured during connection to device ' +
              device["name"] + ':\n' +
              'Port already in use by another device from config.json',
@@ -728,17 +743,17 @@ function IPC(child) {
       } catch (error) {
       }
       PIDToProcess.delete(parseInt(data.deviceID));
-      response = electron.dialog.showMessageBoxSync(mainWindow, {
+      response = electron.dialog.showMessageBoxSync(electron.BrowserWindow.getFocusedWindow(), {
         message: 'An error occured during connection to device ' +
                 config["devices"][data.deviceID]["name"] + ':\n' + data.error,
         type: 'error',
         buttons: ['Retry Connection', 'Ignore'],
         title: config["devices"][data.deviceID]["name"],
-      });
-      // case 0 = Retry Connection button pressed
-      // case 1 and default are ignore and close message window
-      // In that case, remove device from device list and send error message
-      // and updated device list to MXConn
+      })
+        // case 0 = Retry Connection button pressed
+        // case 1 and default are ignore and close message window
+        // In that case, remove device from device list and send error message
+        // and updated device list to MXConn
       switch (response) {
         case 0:
           retryConnection(config["devices"][data.deviceID], parseInt(data.deviceID));

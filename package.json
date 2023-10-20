@@ -1,7 +1,7 @@
 {
-  "name": "MendixPlayer",
-  "productName": "Mendix Player",
-  "version": "0.0.10",
+  "name": "Workstation",
+  "productName": "Mendix Workstation",
+  "version": "0.0.11",
   "description": "Client-side connectivity",
   "main": "src/main.js",
   "scripts": {
@@ -19,7 +19,7 @@
   "author": "z004spnr",
   "license": "MIT",
   "dependencies": {
-    "@abandonware/noble": "^1.9.2-21",
+    "@abandonware/noble": "^1.9.2-23",
     "@serialport/stream": "^11.0.0",
     "electron-squirrel-startup": "^1.0.0",
     "mime": "^3.0.0",
