@@ -4,7 +4,7 @@
 function submitForm() {
     var domain = document.getElementById("webService").value;
     if (!(domain.indexOf('https://') == 0 || domain.indexOf('http://') == 0)) {
-      domain = 'http://' + domain;
+      domain = 'https://' + domain;
     }
     if (domain.slice(-1) == '/') {
       domain = domain.substring(0, domain.length - 1);

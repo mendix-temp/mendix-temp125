@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // Expose part of electron API to renderer.js
 contextBridge.exposeInMainWorld('electronAPI', {
-  open_overlay: (windowID) => ipcRenderer.send('overlay_on', windowID),
+  open_overlay: (windowID) => ipcRenderer.send('open_settings', windowID),
   switch_app: (name, windowID) => ipcRenderer.send('switch_app', name, windowID),
   resize_body: (height) => ipcRenderer.on('resize_body', height),
   toggle_side_menu: (windowID) => ipcRenderer.send('toggle_side_menu', windowID),
@@ -20,4 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   set_go_forward: (disabled) => ipcRenderer.on('set_go_forward', disabled),
   set_go_back: (disabled) => ipcRenderer.on('set_go_back', disabled),
   toggle_dev_tools: (windowID) => ipcRenderer.send('toggle_dev_tools', windowID),
+  handle_workstation_function: (callback) => ipcRenderer.on('handle_workstation_function', callback),
+  open_status: (windowID) => ipcRenderer.send('open_status', windowID),
+  change_status: (newStatus) => ipcRenderer.on('change_status', newStatus),
 });

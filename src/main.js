@@ -8,7 +8,8 @@ let mainWindow,
     isQuiting,
     overlay,
     config,
-    tray;
+    tray,
+    hideWindow;
 
 // pointer to process handling websocket connection to station
 let deviceListProcess = null;
@@ -26,9 +27,10 @@ require('update-electron-app')()
 
 // Class storing a browser window and its associated browser views and overlay
 class WindowClass {
-  constructor(someWindow, someOverlay) {
+  constructor(someWindow, someOverlay, someStatus) {
     this.window = someWindow;
     this.overlay = someOverlay;
+    this.status = someStatus;
 
     // map of app name to view
     this.views = new Map();
@@ -71,8 +73,6 @@ electron.app.whenReady().then(() => {
     webPreferences: {
       preload: path.join(__dirname, '/main_window/preload.js')
     },
-    width: 1024,
-    height: 576,
     show: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
@@ -81,17 +81,23 @@ electron.app.whenReady().then(() => {
     },
   });
   mainWindow.loadFile('src/main_window/index.html');
+  mainWindow.setBounds(electron.screen.getPrimaryDisplay().workArea);
 
-  overlay = new electron.BrowserWindow({
+  overlay = new electron.BrowserView({
     webPreferences: {
       preload: path.join(__dirname, '/overlay/overlay_preload.js')
     }, 
-    parent: mainWindow, 
-    modal: false, 
-    show: false 
   });
-  overlay.loadFile('src/overlay/overlay.html');
+  overlay.webContents.loadFile('src/overlay/overlay.html');
 
+  status_log = new electron.BrowserView({
+    webPreferences: {
+      preload: path.join(__dirname, '/status_log/status_log_preload.js')
+    }, 
+  });
+  status_log.webContents.loadFile('src/status_log/status_log.html');
+  overlay.webContents.toggleDevTools();
+  
   login = new electron.BrowserWindow({
     webPreferences: {
       preload: path.join(__dirname, '/login/preload.js')
@@ -106,9 +112,16 @@ electron.app.whenReady().then(() => {
   // Create link between overlay and main window
   mainWindow.webContents.executeJavaScript('windowID = ' + mainWindow.id + ';');
   overlay.webContents.executeJavaScript('windowID = ' + mainWindow.id + ';');
-  
-  IDToWindowClass.set(mainWindow.id, new WindowClass(mainWindow, overlay));
-  createListeners(mainWindow, overlay, true);
+
+  IDToWindowClass.set(mainWindow.id, new WindowClass(mainWindow, overlay, status_log));
+  fs.readFile(userDataPath + "/config.json", (err, data) => {
+    try {
+      data = JSON.parse(data);
+      hideWindow = data.hide_on_login;
+    }
+    catch {}
+    createListeners(mainWindow, overlay, true);
+  });
 
   // handle tray creation
   tray = new electron.Tray(electron.nativeImage.createFromPath(path.join(__dirname, '../icons/MXP-DarkBlue-Nurture.ico')));
@@ -129,7 +142,7 @@ electron.app.whenReady().then(() => {
       }
     }
   ]));
-  tray.setToolTip('Mendix Player');
+  tray.setToolTip('Mendix Workstation');
   tray.on('click', (event) => {
     if (IDToWindowClass.size == 1) {
       IDToWindowClass.forEach((WindowClassObj, windowID) => {
@@ -137,7 +150,6 @@ electron.app.whenReady().then(() => {
       });
     }
   });
-
   // Hide default window menu
   //electron.Menu.setApplicationMenu(null);
 });
@@ -149,7 +161,7 @@ electron.app.whenReady().then(() => {
 // Return a Rectangle object that is the size of the BrowserView
 function getBoundsView(window) {
   var currentBounds = window.getContentBounds();
-  currentBounds['x'] = IDToWindowClass.get(window.id).sideMenuOpen ? Math.ceil(0.1667 * currentBounds['width']) + 1 : 51;
+  currentBounds['x'] = IDToWindowClass.get(window.id).sideMenuOpen ? Math.round(0.1667 * currentBounds['width']) + 1 : 51;
   currentBounds['width'] = currentBounds['width'] - currentBounds['x'];
   currentBounds['height'] = currentBounds['height'] - 31;
   currentBounds['y'] = 31;
@@ -170,13 +182,14 @@ function setBoundsViews(window) {
     IDToWindowClass.get(window.id).menuOpenable = !IDToWindowClass.get(window.id).menuOpenable;
     window.webContents.send('toggle_block_menu');
   }
-  if (IDToWindowClass.get(window.id).views.size == 0) return;
 
   // Adds an extra step, but makes the app feel more reactive
-  IDToWindowClass.get(window.id).views.get(IDToWindowClass.get(window.id).currentView).setBounds(currentBounds);
+  // IDToWindowClass.get(window.id).views.get(IDToWindowClass.get(window.id).currentView).setBounds(currentBounds);
   IDToWindowClass.get(window.id).views.forEach(function(value, key) {
     value.setBounds(currentBounds);
   });
+  IDToWindowClass.get(window.id).overlay.setBounds(currentBounds);
+  IDToWindowClass.get(window.id).status.setBounds(currentBounds);
 }
 
 // Make the necessary changes when a device cannot connect
@@ -251,9 +264,23 @@ electron.ipcMain.on('toggle_side_menu', (event, windowID) => {
   setBoundsViews(IDToWindowClass.get(windowID).window);
 });
     
-// Shows overlay (menu) when "Add Apps" button is pressed
-electron.ipcMain.on('overlay_on', (event, windowID) => {
-  IDToWindowClass.get(windowID).overlay.show();
+// Shows overlay (menu) when "Settings" button is pressed
+electron.ipcMain.on('open_settings', (event, windowID) => {
+  const window = IDToWindowClass.get(windowID).window;
+  const overlay = IDToWindowClass.get(windowID).overlay;
+  IDToWindowClass.get(windowID).currentView = null;
+  window.webContents.send('handle_workstation_function');
+  window.setBrowserView(overlay);
+  overlay.setBounds(getBoundsView(window));
+});
+
+// Open status log when Status button is pressed
+electron.ipcMain.on('open_status', (event, windowID) => {
+    let windowClassObj = IDToWindowClass.get(windowID);
+    IDToWindowClass.get(windowID).currentView = null;
+    windowClassObj.window.webContents.send('handle_workstation_function');
+    windowClassObj.window.setBrowserView(windowClassObj.status);
+    windowClassObj.status.setBounds(getBoundsView(windowClassObj.window));
 });
 
 
@@ -286,16 +313,16 @@ electron.ipcMain.on('open_app', (event, name, url, source, windowID) => {
       }
       // Update goBack/goForward buttons when page loads/fails to load
       currentApp.webContents.on('did-fail-load', (event) => {
-        IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
-        IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+        IDToWindowClass.get(windowID).window.webContents.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+        IDToWindowClass.get(windowID).window.webContents.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
       });
       currentApp.webContents.on('did-frame-finish-load', (event) => {
-        IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
-        IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+        IDToWindowClass.get(windowID).window.webContents.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+        IDToWindowClass.get(windowID).window.webContents.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
       });
       // In case webApp can go forward/back when it loads
-      IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
-      IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+      IDToWindowClass.get(windowID).window.webContents.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+      IDToWindowClass.get(windowID).window.webContents.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
     });
     // Update buttons in overlay if app is opened from mainWindow
     if (source === 'mainWindow') {
@@ -307,14 +334,14 @@ electron.ipcMain.on('open_app', (event, name, url, source, windowID) => {
 // Switch to a different app (that has been opened before)
 electron.ipcMain.on('switch_app', (event, name, windowID) => {
   let tempWindowClass = IDToWindowClass.get(windowID);
-  if (tempWindowClass.views.size <= 1 || name === tempWindowClass.currentView) return;
+  if (name === tempWindowClass.currentView) return;
   if (tempWindowClass.views.has(name)) {
     tempWindowClass.window.setBrowserView(tempWindowClass.views.get(name));
     tempWindowClass.window.webContents.send('update_status_switched', name);
     tempWindowClass.currentView = name;
     // Update forward/Back buttons when current view is changed
-    IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
-    IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+    IDToWindowClass.get(windowID).window.webContents.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+    IDToWindowClass.get(windowID).window.webContents.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
   }
 });
 
@@ -336,7 +363,7 @@ electron.ipcMain.on('close_app', (event, name, windowID) => {
   }
   currentWindowClass.views.delete(name);
   currentWindowClass.overlay.webContents.send('close_app', name);
-  currentWindowClass.window.webContents.send('close_app', name);
+  currentWindowClass.webContents.send('close_app', name);
 });
 
 // Quit app when a renderer process emits 'quit_app'
@@ -405,14 +432,21 @@ electron.ipcMain.on('refresh_config', (event) => {
   refreshConfig();
 });
 
+electron.ipcMain.on('reset_workstation', (event) => {
+  fs.writeFile(userDataPath + "/config.json", '', (err) => {
+    if (err) {
+      console.log(err)
+    }  
+  });
+  refreshConfig();
+});
+
 // Create new browser window when button is pressed
 electron.ipcMain.on('new_window', (event) => {
   let newWindow = new electron.BrowserWindow({
     webPreferences: {
       preload: path.join(__dirname, '/main_window/preload.js')
     },
-    width: 1024,
-    height: 576,
     show: false,
     titleBarStyle: 'hidden',
     titleBarOverlay: {
@@ -420,23 +454,28 @@ electron.ipcMain.on('new_window', (event) => {
       color: '#f8f8f8'
     },
   });
+  mainWindow.setBounds(electron.screen.getPrimaryDisplay().workArea);
   newWindow.loadFile('src/main_window/index.html');
 
-  let newOverlay = new electron.BrowserWindow({
+  newOverlay = new electron.BrowserView({
     webPreferences: {
       preload: path.join(__dirname, '/overlay/overlay_preload.js')
     }, 
-    parent: newWindow, 
-    modal: false, 
-    show: false 
   });
-  newOverlay.loadFile('src/overlay/overlay.html');
+  newOverlay.webContents.loadFile('src/overlay/overlay.html');
+
+  status_log = new electron.BrowserView({
+    webPreferences: {
+      preload: path.join(__dirname, '/status_log/status_log_preload.js')
+    }, 
+  });
+  status_log.webContents.loadFile('src/status_log/status_log.html');
 
   // Create link between overlay and main window
   newWindow.webContents.executeJavaScript('windowID = ' + newWindow.id + ';');
   newOverlay.webContents.executeJavaScript('windowID = ' + newWindow.id + ';');
   
-  IDToWindowClass.set(newWindow.id, new WindowClass(newWindow, newOverlay));
+  IDToWindowClass.set(newWindow.id, new WindowClass(newWindow, newOverlay, status_log));
   createListeners(newWindow, newOverlay, false);
 });
 
@@ -450,8 +489,8 @@ electron.ipcMain.on('close_overlay', (event, windowID) => {
 electron.ipcMain.on('reload', (event, windowID) => {
   try {
     IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.reload();
-    IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
-    IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+    IDToWindowClass.get(windowID).window.webContents.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+    IDToWindowClass.get(windowID).window.webContents.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
   } catch (error) {
     return;
   }
@@ -460,8 +499,8 @@ electron.ipcMain.on('reload', (event, windowID) => {
 electron.ipcMain.on('go_back', (event, windowID) => {
   try {
     IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.goBack();
-    IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
-    IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());  
+    IDToWindowClass.get(windowID).window.webContents.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+    IDToWindowClass.get(windowID).window.webContents.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());  
   } catch (error) {
     return;
   }
@@ -470,8 +509,8 @@ electron.ipcMain.on('go_back', (event, windowID) => {
 electron.ipcMain.on('go_forward', (event, windowID) => {
   try {
     IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.goForward();
-    IDToWindowClass.get(windowID).window.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
-    IDToWindowClass.get(windowID).window.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
+    IDToWindowClass.get(windowID).window.webContents.send('set_go_forward', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoForward());
+    IDToWindowClass.get(windowID).window.webContents.send('set_go_back', !IDToWindowClass.get(windowID).views.get(IDToWindowClass.get(windowID).currentView).webContents.canGoBack());
   } catch (error) {
     return;
   }
@@ -481,6 +520,56 @@ electron.ipcMain.on('toggle_dev_tools', (event, windowID) => {
   IDToWindowClass.get(windowID).window.webContents.openDevTools({mode: 'detach'})
 });
 
+electron.ipcMain.on('open_workstation_management', (event, windowID) => {
+  let windowClassObj = IDToWindowClass.get(windowID);
+  if (windowClassObj.views.get('workstation_management') != undefined) {
+    windowClassObj.window.setBrowserView(windowClassObj.views.get('workstation_management'));
+    windowClassObj.currentView = 'workstation_management';
+  }
+  else {
+    let workstation_management = new electron.BrowserView();
+    let workstation_management_url = new URL(config.url_station);
+    workstation_management.webContents.loadURL(
+        workstation_management_url.origin + `/link/StationConfigURL?ComputerName=${os.hostname()}`);
+    windowClassObj.window.setBrowserView(workstation_management);
+    workstation_management.setBounds(getBoundsView(windowClassObj.window));
+    windowClassObj.views.set('workstation_management', workstation_management);
+  }
+});
+
+const appFolder = path.dirname(process.execPath);
+const updateExe = path.resolve(appFolder, '..', 'Update.exe');
+const exeName = path.basename(process.execPath);
+// Handle auto-startup setting change
+function handleAutoLogin(autoStart, hideOnStart) {
+  let args;
+  if (hideOnStart) {
+    args = [
+      '--processStart', `"${exeName}"`,
+      '--process-start-args', '"--hidden"'
+    ]
+  }
+  else {
+    args = ['--processStart', `"${exeName}"`]
+  }
+  electron.app.setLoginItemSettings({
+    openAtLogin: autoStart,
+    path: updateExe,
+    args: args,
+  })
+  fs.readFile(userDataPath + "/config.json", (err, data) => {
+    data = JSON.parse(data);
+    data["hide_on_login"] = hideOnStart;
+    data["auto_start"] = autoStart;
+    fs.writeFile(userDataPath + "/config.json", JSON.stringify(data, null, 2), (err) => {if (err) console.log(err)});
+  });
+}
+electron.ipcMain.on('hide_on_login', (event, autoStart, hideOnStart) => {
+  handleAutoLogin(autoStart, hideOnStart);
+});
+electron.ipcMain.on('launch_on_login', (event, autoStart, hideOnStart) => {
+  handleAutoLogin(autoStart, hideOnStart);
+});
 
 /*##################################################################################/*
 ---------------------------------------EVENTS---------------------------------------
@@ -489,8 +578,10 @@ function createListeners(someWindow, someOverlay, isFirstWindow) {
   // Resize html body so that it fits perfectly, regardless of screen resolution
   someWindow.once('ready-to-show', (event) => {
     someWindow.webContents.send('resize_body', someWindow.getContentBounds()['height']);
-    someWindow.maximize();
-    someWindow.show();
+    if (!hideWindow || hideWindow == undefined) {
+      someWindow.show();
+    }
+    hideWindow = false;
   });
 
   // Update bounds of all BrowserViews when window is resized
@@ -517,24 +608,17 @@ function createListeners(someWindow, someOverlay, isFirstWindow) {
     }
   });
 
-  // Overload close button on overlay window so that it hides it 
-  // instead of closing it (useful for storing settings while app is open)
-  someOverlay.on('close', function(e){
-    e.preventDefault();
-    someOverlay.hide();
-  });
-
   // Takes care of JSON.config once overlay is loaded
   // Only connect to devices if connection does not exist
-  someOverlay.on('ready-to-show', (event) => {
+  someOverlay.webContents.on('did-finish-load', (event) => {
     if (isFirstWindow) {
       decideJSON();
     }
     else {
       // Initialize overlay and main window when not first window
       // Create left menu and overlay menu
-      someOverlay.webContents.send('json', JSON.stringify(config["apps"]));
-      someWindow.webContents.send('json', JSON.stringify(config["apps"]));
+      someOverlay.webContents.send('json', config);
+      somewindow.webContents.send('json', JSON.stringify(config["apps"]));
       
       // Create devices test menu
       var deviceList = new Array();
@@ -563,7 +647,7 @@ electron.app.on('window-all-closed', function () {
 /*##################################################################################/*
 -------------------------------------GET CONFIG-------------------------------------
 /*##################################################################################*/
-let userDataPath = electron.app.getPath('userData');
+const userDataPath = electron.app.getPath('userData');
 function decideJSON() {
   if (fs.existsSync(userDataPath + "/config.json")) {
     try {
@@ -579,9 +663,8 @@ function decideJSON() {
     login.show();
   }
 }
-
+let APIKey;
 function handleJSON (config, configExists) {
-  let APIKey;
   // Check if API Key is saved locally
   if (fs.existsSync(userDataPath + "/APIKey.txt")) {
     APIKey = fs.readFileSync(userDataPath + "/APIKey.txt");
@@ -626,15 +709,16 @@ function handleJSON (config, configExists) {
       config["devices"] = json["devices"];
       config["station_name"] = json["station_name"];
       config["config_port"] = json["config_port"];
+
+
       fs.writeFile(userDataPath + "/config.json", JSON.stringify(config, null, 2), function(err) {
         if (err) {
           console.log(err)
-          // TODO: add script to handle write error
         }
       });
       IDToWindowClass.forEach((windowObj, windowID) => {
-        windowObj.overlay.send('json', JSON.stringify(config["apps"]));
-        windowObj.window.send('json', JSON.stringify(config["apps"]));
+        windowObj.overlay.webContents.send('json', JSON.stringify(config));
+        windowObj.window.webContents.send('json', JSON.stringify(config["apps"]));
       });
       
       handleDevices(config);
@@ -646,8 +730,8 @@ function handleJSON (config, configExists) {
       if (configExists) {
         console.log("Using previous config from file.");
         IDToWindowClass.forEach((windowObj, windowID) => {
-          windowObj.overlay.send('json', JSON.stringify(config["apps"]));
-          windowObj.window.send('json', JSON.stringify(config["apps"]));
+          windowObj.overlay.webContents.send('json', JSON.stringify(config));
+          windowObj.window.webContents.send('json', JSON.stringify(config["apps"]));
         });
         
         handleDevices(config);
@@ -700,7 +784,7 @@ function handleDevices(config) {
     device['websocket_port'] = port;
   });
   IDToWindowClass.forEach((windowObj, windowID) => {
-    windowObj.overlay.send('devices_handled');
+    windowObj.overlay.webContents.send('devices_handled');
     windowObj.overlay.webContents.send('device_list', deviceList);
   });
   if (!deviceListProcess) {
@@ -724,13 +808,12 @@ function retryConnection(device, deviceID) {
 }
 
 function portInUse(device, deviceID) {
-  electron.dialog.showMessageBox({
-    message: 'An error occured during connection to device ' +
-             device["name"] + ':\n' +
-             'Port already in use by another device from config.json',
-    type: 'error',
-    buttons: ['Ignore'],
-    title: device["name"],
+  IDToWindowClass.forEach((windowClassObj, windowID) => {
+    windowClassObj.status.webContents.send('send_log', {
+      type: 'error',
+      header: 'port_in_use',
+      error_message:`An error occured during connection to device ${device["name"]}:<br>Port already in use by another device from config.json`,
+    });
   });
 }
 
@@ -743,32 +826,15 @@ function IPC(child) {
       } catch (error) {
       }
       PIDToProcess.delete(parseInt(data.deviceID));
-      response = electron.dialog.showMessageBoxSync(electron.BrowserWindow.getFocusedWindow(), {
-        message: 'An error occured during connection to device ' +
-                config["devices"][data.deviceID]["name"] + ':\n' + data.error,
-        type: 'error',
-        buttons: ['Retry Connection', 'Ignore'],
-        title: config["devices"][data.deviceID]["name"],
-      })
-        // case 0 = Retry Connection button pressed
-        // case 1 and default are ignore and close message window
-        // In that case, remove device from device list and send error message
-        // and updated device list to MXConn
-      switch (response) {
-        case 0:
-          retryConnection(config["devices"][data.deviceID], parseInt(data.deviceID));
-          break;
-        case 1:
-          WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["available"] = "false";
-          sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
-          deviceDisconnected(data.deviceID);
-          break;
-        default:
-          WSPortToDevice.get(config["devices"][data.deviceID]["websocket_port"])["available"] = "false";
-          sendDeviceError(data.error, config["devices"][data.deviceID], data.deviceID);
-          deviceDisconnected(data.deviceID);
-          break;
-      }
+      IDToWindowClass.forEach((windowClassObj, windowID) => {
+        windowClassObj.status.webContents.send('send_log', {
+          type: 'error',
+          header: 'device_error',
+          error_message:`An error occured during connection to device ${config["devices"][data.deviceID]["name"]}:<br>${data.error}`,
+          error: data.error,
+          deviceID: data.deviceID,
+        });
+      });
     }
     else if (data.header == 'newDevice') {
       sendAddDevice(data.data);
@@ -779,6 +845,23 @@ function IPC(child) {
     }
   });
 }
+
+// Handle events from status_log.js
+electron.ipcMain.on('ignore_and_update', (event, deviceID, error) => {
+  WSPortToDevice.get(config["devices"][deviceID]["websocket_port"])["available"] = "false";
+  sendDeviceError(error, config["devices"][deviceID], deviceID);
+  deviceDisconnected(deviceID);
+});
+
+electron.ipcMain.on('retry_connection', (event, deviceID) => {
+  retryConnection(config["devices"][deviceID], parseInt(deviceID));
+})
+
+electron.ipcMain.on('change_status', (event, newStatus) => {
+  IDToWindowClass.forEach((windowClassObj, windowID) => {
+    windowClassObj.window.webContents.send('change_status', newStatus);
+  })
+})
 
 /*###################################################################################/*
 ---------------------------------WEBAPP COMMUNICATION--------------------------------

@@ -20,7 +20,7 @@ function createMenu(data) {
     // Generate buttons in overlay
     let menuWrapper = document.getElementById("app-list-buttons");
     for (i = 0; i < data.length; i++) {
-        let faviconUrl = 'http://' + new URL(data[i].url).hostname + '/favicon.ico';
+        let faviconUrl = 'https://' + new URL(data[i].url).hostname + '/favicon.ico';
         menuWrapper.innerHTML += 
         '<div class="buttons">' +
             '<button class="menuItem" onclick="openApp(this)" id=' + data[i].name + ' data-url="' + data[i].url + '">' +
@@ -34,12 +34,6 @@ function createMenu(data) {
             '</button></div>' +
         '</div>';
     }
-    menuWrapper.innerHTML += '<div class="buttons">' + 
-        '<button class="menuItem diagnostic" onclick="">' + 
-            '<span class="material-symbols-outlined menuIcon">settings_account_box</span>' + 
-            '<div class="menuText">Manage station devices and apps</div>' + 
-        '</button>' +  
-    '</div>'
 }
 
 // Create list of devices in Device List of Settings
@@ -63,6 +57,7 @@ function createDeviceList (report) {
             '<div>' +
                 '<div class="row-title">Driver</div>' +
                 '<div class="important-test">' + report[i].driver_name + '</div>\n' +
+            '</div>' +
             '</div>';
 
         let properties = "";
@@ -70,11 +65,11 @@ function createDeviceList (report) {
             properties += report[i].properties[j].value + ', ';
         }
         properties = properties.slice(0, -2);
-        tableRow += '<div>' +
-                        '<div class="row-title">Properties</div>' +
+        tableRow += '<div class=row-1>' +
+                        '<div class="row-title">Properties:</div>' +
                         '<div>' + properties + '</div>\n' +
-                    '</div></div>';
-        tableRow += '<div class=row-1><div id="' + report[i].websocket_port + '_status' + '">' + ((report[i].available == 'true') ? 'Available' : 'Unavailable') + '</div>';
+                    '</div>';
+        tableRow += '<div class=row-2><div class="row-title status" id="' + report[i].websocket_port + '_status' + '">' + ((report[i].available == 'true') ? 'Available' : 'Unavailable') + '</div>';
         tableRow += '<div><button id="' + report[i].websocket_port + '_openButton' + '" onclick="javascript:openWS(' + report[i].websocket_port + ')"' + ((report[i].available == 'true') ? '' : 'disabled') + ' class="overlay-button row-1-button">Connect</button></div>'
         tableRow += '<div><button id="' + report[i].websocket_port + '_closeButton' + '" onclick="javascript:closeWS(' + report[i].websocket_port + ')" disabled class="overlay-button row-1-button">Disconnect</button></div>'
         tableRow += '<div>' +
@@ -111,7 +106,10 @@ function testWS(WSPort) {
 /*###################################################################################*/
 // Add buttons to overlay once JSON is handled
 window.electronAPI.handle_json((event, jsonData) => {
-    createMenu(JSON.parse(jsonData));
+    jsonData = JSON.parse(jsonData)
+    createMenu(jsonData["apps"]);
+    document.getElementById('launch-on-login').checked = jsonData.auto_start;
+    document.getElementById('hide-on-login').checked = jsonData.hide_on_login;
 });
 
 // Make button reusable when app is successfully closed
@@ -132,7 +130,8 @@ window.electronAPI.receive_message_testWS((event, data, WSPort) => {
 });
 
 window.electronAPI.devices_handled((event) => {
-    document.getElementById("Refresh_Config").disabled = false;
+    document.getElementById("$Refresh_Config").disabled = false;
+    document.getElementById("$Reset_Workstation").disabled = false;
 });
 
 // Update buttons in overlay when app is opened from mainWindow
@@ -149,7 +148,7 @@ window.electronAPI.app_opened_overlay((event, appName) => {
 
 window.electronAPI.clear_overlay((event) => {
     // Remove app buttons in overlay
-    document.getElementById("app-list-buttons").innerHTML = '<div class="settings-title">Application List</div>';
+    document.getElementById("app-list-buttons").innerHTML = '';
 
     // Remove devices list in overlay
     document.getElementById('device-list').innerHTML = '';
@@ -192,30 +191,71 @@ window.electronAPI.device_availability_changed((event, WSPort, deviceAvailable) 
 ----------------------------------------EVENTS---------------------------------------
 /*###################################################################################*/
 // Start WebSocket test when button is clicked
+let deviceVisible = true;
 document.getElementById("Device_List").addEventListener('click', function () {
-    document.getElementById('test').setAttribute('style', 'display:flex;');
-    document.getElementById('menu').setAttribute('style', 'display:none;');
+    if (deviceVisible) {
+        document.getElementById('device-list').setAttribute('style', 'display:none;');
+    }
+    else {
+        document.getElementById('device-list').setAttribute('style', 'display:block;');
+    }
+    deviceVisible = !deviceVisible;
 });
 
-// Exit WebSocket test window when button is clicked
-document.getElementById("backFromTestMenu").addEventListener('click', function () {
-    document.getElementById('test').setAttribute('style', 'display:none;');
-    document.getElementById('menu').setAttribute('style', 'display:flex;');
+// Start WebSocket test when button is clicked
+let appsVisible = true;
+document.getElementById("Application_List").addEventListener('click', function () {
+    if (appsVisible) {
+        document.getElementById('app-list-buttons').setAttribute('style', 'display:none;');
+    }
+    else {
+        document.getElementById('app-list-buttons').setAttribute('style', 'display:block;');
+    }
+    appsVisible = !appsVisible;
 });
 
-document.getElementById("Refresh_Config").addEventListener('click', function () {
-    document.getElementById("Refresh_Config").disabled = true;
+document.getElementById("$Refresh_Config").addEventListener('click', function () {
+    document.getElementById("$Refresh_Config").disabled = true;
     var choice = confirm("Are you sure that you want to refresh the config?\n" + 
     "This will close all open apps and recreate the WebSockets with the devices.")
 
     if (!choice) {
-        document.getElementById("Refresh_Config").disabled = false;
+        document.getElementById("$Refresh_Config").disabled = false;
         return;
     }
 
     window.electronAPI.refresh_config();
 });
 
+document.getElementById("$Reset_Workstation").addEventListener('click', function () {
+    document.getElementById("$Reset_Workstation").disabled = true;
+    var choice = confirm("Are you sure that you want to reset the Workstation?\n" + 
+    "This will delete all existing settings and ask user for the server domain.")
+
+    if (!choice) {
+        document.getElementById("$Reset_Workstation").disabled = false;
+        return;
+    }
+
+    window.electronAPI.reset_workstation();
+});
+
 document.getElementById("logo-back").addEventListener('click', function() {
     window.electronAPI.close_overlay(windowID);
+});
+
+document.getElementById("$Station_Management").addEventListener('click', () => {
+    window.electronAPI.open_workstation_management(windowID);
+});
+
+document.getElementById('launch-on-login').addEventListener('change', (checkBox) => {
+    autoStart = document.getElementById('launch-on-login').checked;
+    hideOnStart = document.getElementById('hide-on-login').checked;
+    window.electronAPI.launch_on_login(autoStart, hideOnStart);
+});
+
+document.getElementById('hide-on-login').addEventListener('change', (checkBox, a) => {
+    autoStart = document.getElementById('launch-on-login').checked;
+    hideOnStart = document.getElementById('hide-on-login').checked;
+    window.electronAPI.hide_on_login(autoStart, hideOnStart);
 });

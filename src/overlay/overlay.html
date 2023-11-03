@@ -165,7 +165,7 @@ body {
   padding: 10px 20px 20px 20px;
   background-color: #FFFFFF;
   border-radius: 9px;
-  width: min(calc(100% - 80px), 900px);
+  width: min(calc(100% - 300px), 800px);
 }
 .diagnostic > span {
   font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 100, 'opsz' 32;
@@ -179,38 +179,51 @@ body {
   padding-bottom: 5px;
 }
 
+.status {
+  overflow: unset !important;
+}
 .device-row {
   display: flex;
   flex-direction: column;
-  background-color: #fbfbfb;
-  margin: 10px 0 20px 0;
-  border-radius: 7px;
-  border: 1px solid gray;
-  padding: 10px;
+  font-size: 12px;
 }
 .row-0 {
   display: flex;
+  height: 50px;
   flex-direction: row;
+  border-bottom: 1px solid #efefef;
 }
 .row-1 {
   display: flex;
   flex-direction: row;
   align-items: center;
+  height: 50px;
+  border-bottom: 1px solid #efefef;
+}
+.row-2 {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 50px;
+  border-bottom: 1px solid gray;
 }
 .row-0 > div {
   margin: 10px;
+  width: 25%;
 }
 .row-1 > div {
   margin: 10px;
 }
+.row-2 > div {
+  margin: 10px;
+}
 .row-title {
-  font-size: 18px;
-  border-bottom: 1px solid lightgray;
-  font-weight: 450;
-  padding-bottom: 2px;
-  margin-bottom: 2px;
+  position: relative;
+  font-size: 14px;
   overflow: hidden;
-  max-height: 24px;
+  text-overflow: ellipsis;
+  text-align: left;
+  font-family: Arial, Helvetica, sans-serif;
 }
 .response {
   width: -webkit-fill-available;
@@ -236,7 +249,7 @@ body {
 }
 .logo-padding {
   position: absolute;
-  left: calc(50% - min(calc(100% - 80px), 900px) / 2 - 20px);
+  left: calc(50% - min(calc(100% - 300px), 800px) / 2 - 20px);
   top: 17px;
   width: 32px;
   height: 32px;
@@ -259,7 +272,6 @@ body {
   border-bottom: 1px solid gray;
   display: flex;
   align-items: center;
-  min-height: 50px;
 }
 .preference-wrapper > span {
   font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 100, 'opsz' 32;
@@ -269,28 +281,54 @@ body {
   padding-right: 20px;
 }
 .preference {
-  margin-top: 8px;
   width: 100%;
   display: flex;
-  flex-direction: column;
-
   font-size: 14px;
   overflow: hidden;
   text-overflow: ellipsis;
-  padding-right: 5px;
   font-family: Arial;
+  height: 50px;
+  align-items: center;
 }
-label {
+.preference-group {
+  width: 100%;
+}
+.inner-preference {
+  border-bottom: 1px solid #efefef;
+}
+.preference-checkbox {
   position: absolute;
-  right: 39px;
+  right: calc(50% - min(calc(100% - 300px), 800px) / 2);
 }
-/* Select last preference */
-.preference:not(.preference > .preference) {
-    padding-bottom: 8px;
+.indent {
+  padding-left: 32px;
 }
-/* Select all but last preference */
-.preference > .preference {
-    margin-left: 32px;
+
+.shortcut > a > button {
+  background-color: white;
+  width: 100%;
+  height: 30px;
+  border-radius: 15px;
+  border: 1px solid gray;
+  cursor: pointer;
+}
+.shortcut > a > button:hover {
+  background-color: #f8f8f8;
+}
+.shortcut > a > button:active {
+  background-color: #bebebe;
+  transition: 250ms;
+}
+a {
+    margin: 0 5px 5px 5px;
+}
+.shortcut {
+    position: fixed;
+    display: flex;
+    flex-direction: column;
+    left: 0;
+    width: 115px;
+    bottom: 0;
 }
 
 </style>
@@ -299,74 +337,83 @@ label {
   <title>Settings</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
 </head>
-<div id="menu" class="page">
-  <body id="body" style="background-color: #f8f8f8;">
-    <div class="page-body">
-      <div class="page-header">
-        <div id="logo-back" class=logo-padding><img class="logo" src="../../icons/MXP-DarkBlue-Nurture.ico"></div>
-        <div class="settings-title page-title">Settings</div>
+<body id="body" style="background-color: #f8f8f8;">
+  <div class="shortcut">
+    <a href="#body"><button>Application List</button></a>
+    <a href="#diagnostic"><button>Diagnostic</button></a>
+    <a href="#preferences"><button>Preferences</button></a>
+  </div>
+  <div class="page-body">
+    <div class="page-header">
+      <div id="logo-back" class=logo-padding><img class="logo" src="../../icons/MXP-DarkBlue-Nurture.ico"></div>
+      <div class="settings-title page-title">Settings</div>
+    </div>
+    <div class="settings-content">
+      <div class="settings-title">Workstation Management</div>
+      <div class="buttons">
+        <button id="$Station_Management" class="menuItem diagnostic">
+          <span class="material-symbols-outlined menuIcon">settings_account_box</span>
+          <div class="menuText">Manage station devices and apps</div>
+        </button>
       </div>
-      <div class="settings-content">
-        <div id="app-list-buttons">
-          <div class="settings-title">Application List</div>
-        </div>
+      <div class="buttons">
+        <button id="$Refresh_Config" class="menuItem diagnostic">
+          <span class="material-symbols-outlined menuIcon">sync</span>
+          <div class="menuText">Refresh configuration</div>
+        </button>
       </div>
-      <div class="settings-content">
-        <div class="settings-title">Diagnostic</div>
+      <div class="buttons">
+        <button id="$Reset_Workstation" class="menuItem diagnostic">
+          <span class="material-symbols-outlined menuIcon">reset_wrench</span>
+          <div class="menuText">Reset Workstation</div>
+        </button>
+      </div>
+    </div>
+    <div class="settings-content">
+        <div class="settings-title">Applications</div>
         <div class="buttons">
-          <button id="Device_List" class="menuItem diagnostic">
+          <button id="Application_List" class="menuItem diagnostic">
             <span class="material-symbols-outlined menuIcon">list</span>
-            <div class="menuText">Device List</div>
+            <div class="menuText">Application List</div>
           </button>
         </div>
-        <div class="buttons">
-          <button id="Refresh_Config" class="menuItem diagnostic">
-            <span class="material-symbols-outlined menuIcon">sync</span>
-            <div class="menuText">Refresh Config</div>
-          </button>
+        <div id="app-list-buttons">
+
         </div>
+    </div>
+    <div id="diagnostic" class="settings-content">
+      <div class="settings-title">Devices</div>
+      <div class="buttons">
+        <button id="Device_List" class="menuItem diagnostic">
+          <span class="material-symbols-outlined menuIcon">list</span>
+          <div class="menuText">Device List</div>
+        </button>
       </div>
-      <div class="settings-content">
-        <div class="settings-title">Preferences</div>
-        <div class="preference-wrapper">
-          <span class="material-symbols-outlined">speed</span>
-          <div class="preference">
+      <div id="device-list">
+    
+      </div>
+    </div>
+    <div class="settings-content">
+      <div id="preferences" class="settings-title">Preferences</div>
+      <div class="preference-wrapper">
+        <span class="material-symbols-outlined">speed</span>
+        <div class="preference-group">
+          <div class="preference inner-preference">
             <div>
               Launch Workstation on login
-              <label class="switch">
-                <input type="checkbox">
-              </label>
+              <input class="preference-checkbox" id="launch-on-login" type="checkbox">
             </div>
-            <div class="preference">
-              <div>
-                Hide Workstation when launched on login
-                <label class="switch">
-                  <input type="checkbox">
-                </label>
-              </div>
-              <div class="preference">
-                <div>
-                  Recursion test
-                  <label class="switch">
-                    <input type="checkbox">
-                  </label>
-                </div>
-              </div>
+          </div>
+          <div class="preference">
+            <!--div class="indent"></div-->
+            <div>
+              Launch Workstation in systray
+              <input class="preference-checkbox" id="hide-on-login" type="checkbox">
             </div>
           </div>
         </div>
       </div>
     </div>
-  </body>
-</div>
-<div id="test" class="page" style="display: none;">
-  <div class="page-header">
-    <button class="overlay-button" id="backFromTestMenu"><span class="material-symbols-outlined">arrow_back</span></button>
-    <div class="settings-title page-title">Device List</div>
   </div>
-
-  <div class="settings-content test-content" id="device-list">
-      
-  </div>
-</div>
+</body>
 <script src="./overlay.js"></script>

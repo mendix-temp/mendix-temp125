@@ -186,6 +186,15 @@ window.electronAPI.update_status_switched((event, name) => {
     currentAppName = name;
 });
 
+// Handle settings or status opened
+window.electronAPI.handle_workstation_function((event) => {
+    if (currentAppName !== "") {
+        document.getElementById(currentAppName + '_open_status').innerHTML = "circle";
+        document.getElementById(currentAppName + '_closed_status').innerHTML = "circle";
+    }
+    currentAppName = "";
+});
+
 // Disable/Enable goForward button in current view
 window.electronAPI.set_go_forward((event, disabled) => {
     document.getElementById('goForward').disabled = disabled;
@@ -196,11 +205,31 @@ window.electronAPI.set_go_back((event, disabled) => {
     document.getElementById('goBack').disabled = disabled;
 });
 
+window.electronAPI.change_status((event, newStatus) => {
+    const icon = document.getElementById('statusButton').children[0];
+    if (newStatus == 'error') {
+        icon.innerHTML = 'error';
+        icon.setAttribute('style', 'color: red;');
+    }
+    else if (newStatus == 'warning') {
+        icon.innerHTML = 'warning';
+        icon.setAttribute('style', 'color: orange;');
+    }
+    else if (newStatus == 'normal') {
+        icon.innerHTML = 'check';
+        icon.setAttribute('style', 'color: #04df10;');
+    }
+})
+
 /*###################################################################################/*
 ----------------------------------------EVENTS---------------------------------------
 /*###################################################################################*/
-// Open overlay when "add app" button is pressed
+// Open settings when "Settings" button is pressed
 document.getElementById('settingsButton').addEventListener('click', openOverlay);
+
+document.getElementById('statusButton').addEventListener('click', function() {
+    window.electronAPI.open_status(windowID);
+});
 
 // Open or close side menu
 document.getElementById('minimizeButton').addEventListener('click', function () {
