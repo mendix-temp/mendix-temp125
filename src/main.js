@@ -96,7 +96,6 @@ electron.app.whenReady().then(() => {
     }, 
   });
   status_log.webContents.loadFile('src/status_log/status_log.html');
-  overlay.webContents.toggleDevTools();
   
   login = new electron.BrowserWindow({
     webPreferences: {
@@ -439,6 +438,10 @@ electron.ipcMain.on('reset_workstation', (event) => {
     }  
   });
   refreshConfig();
+  IDToWindowClass.forEach((windowClassObj, windowID) => {
+    windowClassObj.status.webContents.loadFile('src/status_log/status_log.html');
+    windowClassObj.window.webContents.send('change_status', 'normal');
+  });
 });
 
 // Create new browser window when button is pressed
