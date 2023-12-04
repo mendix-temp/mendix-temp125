@@ -1,7 +1,7 @@
 {
   "name": "Workstation",
   "productName": "Mendix Workstation",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Client-side connectivity",
   "main": "src/main.js",
   "scripts": {
@@ -23,6 +23,7 @@
     "@serialport/stream": "^11.0.0",
     "electron-squirrel-startup": "^1.0.0",
     "mime": "^3.0.0",
+    "node-fetch": "^2.7.0",
     "node-hid": "^2.1.2",
     "path": "^0.12.7",
     "pcsclite": "^1.0.1",
