@@ -621,7 +621,7 @@ function createListeners(someWindow, someOverlay, isFirstWindow) {
       // Initialize overlay and main window when not first window
       // Create left menu and overlay menu
       someOverlay.webContents.send('json', config);
-      somewindow.webContents.send('json', JSON.stringify(config["apps"]));
+      someWindow.webContents.send('json', JSON.stringify(config["apps"]));
       
       // Create devices test menu
       var deviceList = new Array();

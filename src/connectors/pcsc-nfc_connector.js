@@ -36,20 +36,20 @@ var new_client = function(webSocketClient, req)  {
         console.log('Card Reader name: ' + reader.name);
 		
         // Check if a card is in range and send hardcoded message
-        if (reader.connected) {
-            reader.transmit(Buffer.from(msg.toString(), 'hex'), msg.length * 4, readerToProtocol.get(reader), function(err, data) {
-                if (err) {
-                    console.log(err);
-                    WSPortToWSServer.get(reader.WSPort).clients.forEach((client) => {
-                        client.send('3#' + err.toString('hex'));
-                    });
-                } else {
+        if (reader.connected && reader.reader.connected) {
+            reader.transmit(Buffer.from(msg.toString(), 'hex'), msg.length * 4)
+            .then((data) => {
                     console.log(data);
                     console.log('Data received:', data.toString('hex'));
                     WSPortToWSServer.get(reader.WSPort).clients.forEach((client) => {
                         client.send('2#' + data.toString('hex'));
                     });
-                }
+            })
+            .catch((err) => {
+                console.log(err);
+                WSPortToWSServer.get(reader.WSPort).clients.forEach((client) => {
+                    client.send('3#' + err.toString('hex'));
+                });
             });
         }
         else {
@@ -75,11 +75,12 @@ var new_client = function(webSocketClient, req)  {
 	});
 }
 
-var pcsc = require('pcsclite');
+const { NFC } = require('nfc-pcsc');
 
-var pcsc = pcsc();
-pcsc.on('reader', function(reader) {
-    // console.log('New reader detected', reader.name);
+var nfc = new NFC();
+nfc.on('reader', function(reader) {
+    reader.autoProcessing = false;
+    reader.connected = true;
 
     // Initialize WebSocket server to allow connections with MX Station
     webServer = http.createServer();
@@ -107,53 +108,42 @@ pcsc.on('reader', function(reader) {
     
 
     reader.on('error', function(err) {
-        console.log('Error(', this.name, '):', err.message);
+        console.log('Error(', reader.name, '):', err.message);
+        reader.connected = false;
     });
 
-    reader.on('status', function(status) {
-        console.log('Status(', this.name, '):', status);
-        /* check what has changed */
-        var changes = this.state ^ status.state;
-        if (changes) {
-            if ((changes & this.SCARD_STATE_EMPTY) && (status.state & this.SCARD_STATE_EMPTY)) {
-                console.log("card removed");
-                reader.disconnect(this.SCARD_LEAVE_CARD, function(err) {
-                    if (err) {
-                        console.log(err);
-                    } else {
-                        if (WSPortToWSServer.has(this.WSPort)) {
-                            WSPortToWSServer.get(this.WSPort).clients.forEach((client) => {
-                                client.send('1#');
-                            });
-                        }
-                    }
-                }.bind(reader));
-            } else if ((changes & this.SCARD_STATE_PRESENT) && (status.state & this.SCARD_STATE_PRESENT)) {
-                console.log("card inserted");
-                reader.connect({ share_mode : this.SCARD_SHARE_SHARED }, function(err, protocol) {
-                    if (err) {
-                        console.log(err); 
-                    } else {
-                        if (WSPortToWSServer.has(this.WSPort)) {
-                            WSPortToWSServer.get(this.WSPort).clients.forEach((client) => {
-                                client.send('0#');
-                            });
-                        }
-                        console.log('Protocol(', reader.name, '):', protocol);
-                        readerToProtocol.set(reader, protocol);
-                    }
-                }.bind(reader));
-            }
+    reader.on('card', card => {
+		// card is object containing following data
+		// String standard: TAG_ISO_14443_3 (standard nfc tags like MIFARE Ultralight) or TAG_ISO_14443_4 (Android HCE and others)
+		// String type: same as standard
+		// Buffer atr
+		console.log(`${reader.reader.name}  card inserted`, card);
+
+        if (WSPortToWSServer.has(reader.WSPort)) {
+            WSPortToWSServer.get(reader.WSPort).clients.forEach((client) => {
+                client.send('0#');
+            });
         }
-    });
+        console.log('Protocol(', reader.name, '):', protocol);
+        readerToProtocol.set(reader, protocol);
+		// you can use reader.transmit to send commands and retrieve data
+		// see https://github.com/pokusew/nfc-pcsc/blob/master/src/Reader.js#L291
+
+	});
+	
+	reader.on('card.off', card => {	
+		console.log(`${reader.reader.name}  card removed`, card);
+        if (WSPortToWSServer.has(reader.WSPort)) {
+            WSPortToWSServer.get(reader.WSPort).clients.forEach((client) => {
+                client.send('1#');
+            });
+        }
+	});
 
     reader.on('end', function() {
-        console.log('Reader',  this.name, 'removed');
+        console.log('Reader',  reader.name, 'removed');
+        reader.connected = false;
     });
-});
-
-pcsc.on('error', function(err) {
-    console.log('PCSC error', err.message);
 });
 
 function sendNewDevice(reader, wsPort) {
