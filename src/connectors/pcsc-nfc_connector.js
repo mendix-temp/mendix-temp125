@@ -6,7 +6,7 @@ var deviceID = device.deviceID;
 
 
 var webSockets = {
-    values: [8200, 8201, 8208, 8204, 8205, 8206, 8207],
+    values: [...Array(10).keys()].map(x => x + parseInt(device.websocket_port)),
     usedSoFar: 0,
 };
 var usedSockets = new Set();

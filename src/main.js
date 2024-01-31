@@ -362,7 +362,7 @@ electron.ipcMain.on('close_app', (event, name, windowID) => {
   }
   currentWindowClass.views.delete(name);
   currentWindowClass.overlay.webContents.send('close_app', name);
-  currentWindowClass.webContents.send('close_app', name);
+  currentWindowClass.window.webContents.send('close_app', name);
 });
 
 // Quit app when a renderer process emits 'quit_app'
@@ -586,7 +586,6 @@ function createListeners(someWindow, someOverlay, isFirstWindow) {
     }
     hideWindow = false;
   });
-
   // Update bounds of all BrowserViews when window is resized
   someWindow.on('resize', (event) => {
     setBoundsViews(someWindow);
@@ -884,7 +883,7 @@ function startWebAppCommProcess(WSPort) {
       handleJSON(config, false);
     }
   });
-}
+} 
 
 // Send error message to Web App
 function sendDeviceError(err, device, deviceID) {
