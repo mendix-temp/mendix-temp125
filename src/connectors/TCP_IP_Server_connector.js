@@ -102,6 +102,7 @@ function initWsServer() {
 	// replace \\n by \n, \\r by \r, ...
 	var temp = {suff: suffix};
 	temp = JSON.stringify(temp);
+	temp = temp.replaceAll('\\0', '\\u0000')
 	temp = temp.replaceAll('\\\\', '\\');
 	temp = JSON.parse(temp);
 	suffix = temp.suff;

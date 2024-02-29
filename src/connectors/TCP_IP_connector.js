@@ -205,6 +205,7 @@ function initWsServer() {
 				suffixOutAdd: suffixOutAdd,
 				suffixInRemove: suffixInRemove};
 	temp = JSON.stringify(temp);
+	temp = temp.replaceAll('\\0', '\\u0000')
 	temp = temp.replaceAll('\\\\', '\\');
 	temp = JSON.parse(temp);
 	suffixOutAwait = temp.suffixOutAwait;
