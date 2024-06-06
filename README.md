@@ -22,7 +22,7 @@ Move to the directory containing the source code (with the node dependencies fou
 Then run the make command:  
 `npm run make`  
 
-The executable can bu found at: `./out/make/Mendix Workstation-<version> Setup.exe`
+The executable can be found at: `./out/make/Mendix Workstation-<version> Setup.exe`
 
 ### How to deploy for autoupdate
 
@@ -32,6 +32,7 @@ Make sure that all files are committed and pushed to the github repository
 `git add <fileName>` or `git add <folderName>: add the chosen file/folder to the next commit  
 `git commit`: commit the files
 `git push`: push the commited files to github repository  
+`npm run publish`: create a software release on github
 
 Then, you need to go to log in the github repo and follow the following steps to set the last publish as the latest release (the one used by the autoupdate)  
 
@@ -59,8 +60,9 @@ Change the "version" fields in package.json and package-lock.json to the correct
 
 Run the following command in the working directory to be to download the files:  
 `git clone https://github.com/mendix-temp/mendix-temp125`  
-Note that for privacy and technical reasons, the public github do not contain all the files needed to compile the application.  
-The additional dependencies (forge.config.js and the node_modules folder) can be found in the shared onedrive. 
+Note that for privacy reasons, the public github do not contain all the files needed to compile the application.  
+The additional dependency (forge.config.js) can be found in the shared onedrive. 
+The Node.js dependencies can be downloaded using the following command at the root of the project: `npm install`
 
 ## Architecture
 
