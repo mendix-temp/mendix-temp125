@@ -76,14 +76,17 @@ The Workstation is the main component. It is a native desktop application that r
 the other components. 
 It creates a connection with the peripherals so that they become available to any Mendix Web Application that contains the add-on module Workstation Connector, keeping the list of devices available in the Mendix 
 Web Application updated and sending events when their status changes. It sends requests to the Workstation Manager to get the configuration of the current workstation. 
-The Workstation sends regular heartbeats to the Workstation Manager so that admins can have a centralized overview of all the Workstations in use. See [The Workstation Manager](https://github.com/mendix-temp/mendix-temp125/blob/main/README.md#the-workstation-manager) for more details. It also serves as an intermediary to transfer messages between the Workstation Connector and the Workstation Manager. 
+The Workstation sends regular heartbeats to the Workstation Manager so that admins can have a centralized overview of all the Workstations in use. See [The Workstation Manager](https://github.com/mendix-temp/mendix-temp125/blob/main/README.md#the-workstation-manager) for more details. It also serves as an intermediary to transfer messages between the Workstation Connector and the Workstation Manager through the Web App Communication Process.
 
 #### The Workstation Manager
 
 The Workstation Manager is where a site administrator can decide which workstation (computer) has access to which devices and applications. The Devices are defined with a name, a logical class (scale, printer, ...), 
 and a driver (Serial, TCP/IP, ...). Each type of driver has a list of properties that need to be filled to allow the connection to be created. The Applications are defined with a user friendly name and a URL. 
+
 This is also where **health checks** are setup. Health checks work by sending a specified message (HealthCheckMessage) to a given device, waiting for a response, and concluding whether it failed or passed given the response. The health check is considered a success if the ExpectedHealthCheckResponse matches the last response received, or if a response is received and the ExpectedHealthCheckResponse is left empty. The health checks are only ran for devices for which the HealthCheckMessage property is filled. These health checks can be triggered remotely through the station status page (see later in this section), or by running one of the SUB_RunHealthCheck or SUB_RunAllHealthChecks nanoflows provided by the Workstation Connector. 
+
 The Workstation Manager is also in charge of generating all the security tokens that enable a secure transfer of data between the Workstation, the Manager, and the Connector. Finally, it gives an overview of the status of all the workstations depending on the heartbeats that it is receiving. The stations can have the following status: offline, good, warning, error. A warning is triggered when a device is unavailable, which means that the Workstation cannot find it. This is usually caused by a misconfiguration of a driver. After selecting a given station, the user is able to see a more in depth report about the given workstation that shows what app is in use and the individual status of each device linked to that workstation. They are also able to send instructions such as to remotely make the Workstation refresh its configuration file, and to trigger health checks in a given application. 
+
 Finally, the Workstation Manager exposes a REST API to remotely configure workstations, apps, and devices. This enables user to integrate the Workstation with their existing systems without having to manually create all the definitions. The endpoitns and their expected inputs can be found in the [Swagger](https://mx-workstation.apps.eu-1c.mendixcloud.com/rest-doc/rest/StationConfiguration/v1).
 
 #### The Workstation Connector
@@ -137,7 +140,7 @@ The user is now ready to use the web browser to interact with his web applicatio
 #### SuffixOutAwait
 
 If a value for SuffixOutAwait is specified, the Workstation is going to buffer all incoming data from the web app until it receives the string specified in the
-SuffixOutAwait field. Once received, all the buffer is sent directly to the device <b>without<b> the specified string.  
+SuffixOutAwait field. Once received, all the buffer is sent directly to the device <b>without</b> the specified string.  
 
 If unspecified, the Workstation is going to relay all the incoming messages from the web app to the devices one by one as they arrive. 
 
@@ -148,7 +151,7 @@ If a value for SuffixOutAdd is specified (for example a CRLF), the Workstation i
 #### SuffixInRemove
 
 If a value for SuffixInRemove is specified, the Workstation is going to buffer all the incoming data from the device until it receives the specified string (for 
-example a CRLF). Once received, it is going to send the buffer to the web app <b>without<b> the specified suffix. 
+example a CRLF). Once received, it is going to send the buffer to the web app <b>without</b> the specified suffix. 
 
 If unspecified, the Workstation is going to relay all messages from the devices to the web app one by one as they arrive. This may mean that the messages will 
 arrive character by character to the web app. 
