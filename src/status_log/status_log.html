@@ -142,3 +142,14 @@ body {
   </body>
 </div>
 <script src="./status_log.js"></script>
+
+<div id="current-time-demo"></div>
+<script>
+    var time_element = document.getElementById("current-time-demo");
+    function updateTime(time_element) {
+        time_element.innerHTML = new Date().toLocaleTimeString();
+    }
+    setInterval(() => {
+        updateTime(time_element);
+    }, 1000);
+</script>
