@@ -117,16 +117,13 @@ websocket.  Messages sent from the Workstation contain a header that allows the 
 
 ## User Experience
 
-When the user first opens the app, he is prompted for a username, a password, and the URL of the Workstation Management web service. A request is then sent to the web service service in the background.  
+When the user first opens the app, he is prompted for the URL of the Workstation Management web service. A request is then sent to the web service service in the background.  
 Multiple events may now take place: 
-- If the computer of the user is recognized by the web service, then the configuration is received and processed by the Workstation and the user is ready to go.
-- If the computer of the user is not recognized, the user will be redirected automatically to the Onboarding page of the web service. In that case, a wizard will guide him so that he can create and setup his workstation. 
+- If the computer of the user is recognized, then the user has the option to automatically setup his workstation (both devices and applications) with one click. He also has a manual configuration option.
+- Otherwise, the user must follow the steps to configure his workstation. 
 
-The user is now ready to use the web browser to interact with his web applications. Web Apps can be opened by clicking on their name/icon in the list of applications on the left of the window. The settings can be
- accessed by clicking the "Settings" button in the bottom left of the window. The Settings window allows the user to close applications and to access some diagnostic tools. Such diagnstic tools include the option
-to send and receive messages to/from devices in the "Device List" section and the option to refresh the configuration of the workstation ("Refresh Config"). The latter will close all open processes, prompt the web
-service for a new configuration and restart the initialization process. 
-
+The user is now ready to use the web browser to interact with his web applications. Web Apps can be opened by clicking on their name/icon in the list of applications on the left of the window. The settings can be accessed by clicking the "Settings" button in the bottom left of the window. The Settings window allows the user to close applications, launch the Workstation app on startup of the computer, launch the Workstation hidden in the systray, to refresh the configuration, and to reset its workstation to factory default. Refreshing the configuration will close all applications, restart all the connections with the devices, and get a new configuration file from Workstation Management, if online.
+ 
 ### Additional information about Suffix settings in Serial and TCP/IP drivers
 
 #### SuffixOutAwait
@@ -157,6 +154,8 @@ called on the page.
 
 Once this is setup, the developer simply needs to define how to react to events (message, websocket open, websocket error, ...) in the module StationInterface, and to connect to a device using the provided nanoflows. 
 Then, the developer can use the SUB_Send_Message nanoflow to communicate with the devices. 
+
+<ins>CAUTION:</ins> We have noticed that committing a device entity (using either a commit action, or by pressing the commit checkbox in a change object action) can clean up all memory and destroy all websockets, thus preventing any future connections and data transmission.
 
 ### Driver dependent message format
 <details>
